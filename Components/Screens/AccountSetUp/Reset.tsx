@@ -13,19 +13,21 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
 import { useNavigation } from '@react-navigation/native';
 import AnimatedInput from '../Assecories/AnimatedInput';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { ScreenNavigationProp } from '../../../navigation';
-import { API_URl } from '@env'; // Importing API_URl from the .env file
+import { API_URl } from '@env';
+
+
 
 const Reset = () => {
   const [email, setEmail] = useState('');
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const navigation = useNavigation<ScreenNavigationProp<'Reset2'>>();
 
@@ -50,43 +52,40 @@ const Reset = () => {
     };
   }, []);
 
-  const handleContinuePress = async () => {
+  const handleRestPassword = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URl}/user/reset-password`, {
+      const response = await fetch(`${API_URl}/user/forgot-password-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email
+        }),
       });
+
       const data = await response.json();
-      if (response.ok && data.success) {
+      setLoading(false);
+      if (response.ok) {
         navigation.navigate('Reset2');
       } else {
-        setError(data.message || 'Unknown Error');
+        Alert.alert('Reset Password Failed', data.message || 'Unknown Error');
       }
     } catch (error) {
-      console.error('Error:', error);
-      // setError('Unknown Error');
-    } finally {
       setLoading(false);
+      Alert.alert('Reset Password error', (error as Error).message);
     }
   };
 
   return (
-    <ScrollView>
+    <>
+      <ScrollView>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <SafeAreaView style={styles.loadingContainer}>
@@ -97,39 +96,36 @@ const Reset = () => {
               />
               <Text style={styles.title}>Reset Password</Text>
               <Text style={styles.subtitle}>
-                Forgot your password? No worries! Just enter your email address
-                below, and we'll send you a link to reset it.
+              Forgot your password? No worries! Just enter your email address below, and we'll send you a link to reset it. 
               </Text>
             </View>
 
             {/* Email Address Input */}
             <AnimatedInput
-              placeholder="Email Address"
-              value={email}
-              onChangeText={(text) => setEmail(text)}
-            />
-
-            {error && (
-              <Text style={styles.errorMessage}>{error}</Text>
-            )}
-
+                placeholder="Email Address"
+                value={email}
+                onChangeText={(text) => setEmail(text)}
+              />
+            
             {/* Button */}
             <View style={styles.buttonContainer}>
-              {loading ? (
-                <ActivityIndicator size="small" color="black" />
-              ) : (
-                <CustomButton
-                  width={"100%"}
-                  gradientColors={['#ee0979', '#ff6a00']}
-                  title="Continue"
-                  onPress={handleContinuePress}
-                />
-              )}
+              <CustomButton
+                width={"100%"}
+                gradientColors={['#ee0979', '#ff6a00']}
+                title="Continue"
+                onPress={handleRestPassword}
+              />
             </View>
           </SafeAreaView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-    </ScrollView>
+      </ScrollView>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#ff6a00" />
+        </View>
+      )}
+    </>
   );
 };
 
@@ -206,9 +202,13 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     width: '100%',
   },
-  errorMessage: {
-    color: 'red',
-    marginBottom: 10,
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: "100%",
+    height: "100%"
   },
 });
 

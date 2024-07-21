@@ -12,14 +12,14 @@ import {
   Keyboard,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
 import { useNavigation } from '@react-navigation/native';
 import AnimatedInput from '../Assecories/AnimatedInput';
-import { Ionicons } from '@expo/vector-icons';
+import Checkbox from '../Assecories/Checkbox';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { ScreenNavigationProp } from '../../../navigation';
-import { API_URl } from '@env';
+
 
 const Reset3 = () => {
   const [password, setPassword] = useState('');
@@ -27,8 +27,6 @@ const Reset3 = () => {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const navigation = useNavigation<ScreenNavigationProp<'Reset4'>>();
 
@@ -53,30 +51,6 @@ const Reset3 = () => {
     };
   }, []);
 
-  const handleConfirmPress = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URl}/user/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password, confirmPassword }),
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        navigation.navigate('Reset4');
-      } else {
-        setError(data.message || 'Unknown Error');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      // setError('Unknown Error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <ScrollView>
       <KeyboardAvoidingView
@@ -93,63 +67,31 @@ const Reset3 = () => {
               />
               <Text style={styles.title}>Reset Password</Text>
               <Text style={styles.subtitle}>
-                To reset your password, please enter a new password. Make sure
-                your new password is strong and secure.
+                To reset your password, please enter a new password. Make sure your new password is strong and secure. 
               </Text>
             </View>
 
-            {/* Password Input */}
-            <AnimatedInput
-              placeholder="Password"
-              value={password}
-              onChangeText={(text) => setPassword(text)}
-              secureTextEntry={!isPasswordVisible}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setIsPasswordVisible((prev) => !prev)}
-            >
-              <Ionicons
-                name={isPasswordVisible ? 'eye-off' : 'eye'}
-                size={24}
-                color="#333"
-              />
-            </TouchableOpacity>
-
-            {/* Confirm Password Input */}
-            <AnimatedInput
-              placeholder="Confirm Password"
-              value={confirmPassword}
-              onChangeText={(text) => setConfirmPassword(text)}
-              secureTextEntry={!isConfirmPasswordVisible}
-            />
-            <TouchableOpacity
-              style={styles.eyeIcon}
-              onPress={() => setIsConfirmPasswordVisible((prev) => !prev)}
-            >
-              <Ionicons
-                name={isConfirmPasswordVisible ? 'eye-off' : 'eye'}
-                size={24}
-                color="#333"
-              />
-            </TouchableOpacity>
-
-            {error && (
-              <Text style={styles.errorMessage}>{error}</Text>
-            )}
+          {/* Password Input */}
+          <AnimatedInput
+            placeholder="Password"
+            value={password}
+            onChangeText={(text) => setPassword(text)}
+          />
+          {/* Password Input */}
+          <AnimatedInput
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={(text) => setConfirmPassword(text)}
+          />
 
             {/* Button */}
             <View style={styles.buttonContainer}>
-              {loading ? (
-                <ActivityIndicator size="small" color="black" />
-              ) : (
-                <CustomButton
-                  width={"100%"}
-                  gradientColors={['#ee0979', '#ff6a00']}
-                  title="Confirm"
-                  onPress={handleConfirmPress}
-                />
-              )}
+              <CustomButton
+                width={"100%"}
+                gradientColors={['#ee0979', '#ff6a00']}
+                title="Confirm"
+                onPress={() => navigation.navigate('Reset4')}
+              />
             </View>
           </SafeAreaView>
         </TouchableWithoutFeedback>
@@ -239,10 +181,6 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 5,
-  },
-  errorMessage: {
-    color: 'red',
-    marginBottom: 10,
   },
 });
 

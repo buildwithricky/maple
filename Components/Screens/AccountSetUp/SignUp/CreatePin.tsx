@@ -4,66 +4,34 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   SafeAreaView,
   Vibration,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import DialPad from './DialPad';
 import CustomButton from '../../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../../navigation';
-import { API_URl } from '@env'; // Importing API_URl from the .env file
+import * as SecureStore from 'expo-secure-store';
+import { API_URl } from '@env';
 
 const CreatePin = () => {
   const navigation = useNavigation<ScreenNavigationProp<'CreatePin3'>>();
   const [code, setCode] = useState(['', '', '', '']);
-  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [isCodeCorrect, setIsCodeCorrect] = useState(false);
-
-  const handleResendCode = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 3000);
-  };
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
+    // Check if all code inputs are filled
     if (newCode.every(digit => digit !== '')) {
       setLoading(true);
-
-      fetch(`${API_URl}/verify-pin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pin: newCode.join('') }),
-      })
-        .then(response => response.json())
-        .then(data => {
-          setLoading(false);
-          if (data.success) {
-            setIsCodeCorrect(true);
-          } else {
-            setError(true);
-            Vibration.vibrate();
-          }
-        })
-        .catch(error => {
-          setLoading(false);
-          setError(true);
-          Vibration.vibrate();
-          console.error('Error:', error);
-        });
-    } else {
-      setError(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 3); // Simulate loading
     }
   };
 
@@ -83,6 +51,44 @@ const CreatePin = () => {
 
   const isCodeComplete = code.every(digit => digit !== '');
 
+  const handleSubmit = async () => {
+    if (isCodeComplete) {
+      setLoading(true);
+      try {
+        const pin = code.join('');
+        const userId = await SecureStore.getItemAsync('userID');
+        console.log(userId)
+        
+        if (!userId) {
+          throw new Error('User ID not found');
+        }
+
+        const response = await fetch(`${API_URl}/user/create-pin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ pin, userId }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          navigation.navigate('CreatePin3');
+        } else {
+          setError(true);
+          Vibration.vibrate();
+        }
+      } catch (error) {
+        console.error('Error creating PIN:', error);
+        setError(true);
+        Vibration.vibrate();
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -101,7 +107,7 @@ const CreatePin = () => {
                 onChangeText={(value) => handleInputChange(index, value)}
                 keyboardType="numeric"
                 maxLength={1}
-                secureTextEntry={true}
+                secureTextEntry={true}  // This makes the input dots
               />
             ))}
           </View>
@@ -112,11 +118,7 @@ const CreatePin = () => {
               width={163}
               gradientColors={isCodeComplete ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
               title="Continue"
-              onPress={() => {
-                if (isCodeComplete && isCodeCorrect) {
-                  navigation.navigate('CreatePin3');
-                }
-              }}
+              onPress={handleSubmit}
               textStyle={isCodeComplete ? styles.buttonText : styles.buttonTextDisabled}
             />
           </View>
@@ -147,13 +149,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  title: {
-    fontSize: 16,
-    color: 'grey',
-    fontWeight: '300',
-    textAlign: 'center',
-    paddingBottom: 45,
-  },
   title_two: {
     fontSize: 23,
     textAlign: 'center',
@@ -163,11 +158,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'grey',
     textAlign: 'center',
-  },
-  subtitle_two: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 10,
   },
   inputCodeContainer: {
     flexDirection: 'row',
@@ -194,12 +184,6 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: '#999999',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 35,
-    left: 20,
-    zIndex: 1,
   },
   errorMessage: {
     color: '#EE4139',

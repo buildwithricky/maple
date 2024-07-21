@@ -205,10 +205,10 @@ export default function RootNavigator() {
           {/* HomePage after login */}
           <Stack.Screen name="Homepage" component={HomeTabs} options={{ headerShown: false }} />
           {/* Reset pass screen */}
-          <Stack.Screen name="Reset" component={Reset} options={{headerShown: false}} />
-          <Stack.Screen name="Reset2" component={Reset2} options={{headerShown: false}} />
-          <Stack.Screen name="Reset3" component={Reset3} options={{headerShown: false}} />
-          <Stack.Screen name="Reset4" component={Reset4} options={{headerShown: false}} />
+          <Stack.Screen name="Reset" component={Reset} options={{ ...tabScreenOptions, headerTitle: "1 of 4" }} />
+          <Stack.Screen name="Reset2" component={Reset2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} />
+          <Stack.Screen name="Reset3" component={Reset3} options={{ ...tabScreenOptions, headerTitle: "3 of 4" }} />
+          <Stack.Screen name="Reset4" component={Reset4}  options={{ ...tabScreenOptions, headerTitle: "4 of 4" }} />
           {/* Account Verification Screens */}
           <Stack.Screen name="Verification_01" component={Verification_01} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }}   />
           <Stack.Screen name="Verification_02" component={Verification_02} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
@@ -240,7 +240,7 @@ export default function RootNavigator() {
           <Stack.Screen name="AccountVerification2" component={AccountVerification2} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
           <Stack.Screen name="AccountVerification3" component={AccountVerification3} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
           <Stack.Screen name="Notifications" component={Notifications} options={{headerShown: false}} />
-          <Stack.Screen name="RateAlerts" component={RateAlerts} options={{headerShown: false}} />
+          <Stack.Screen name="RateAlerts" component={RateAlerts} options={{ ...tabScreenOptions, headerTitle: "Our Rates" }} />
           <Stack.Screen name="Transaction" component={Transaction} options={{headerShown: false}} />
           <Stack.Screen name="Change" component={Change} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
           <Stack.Screen name="Factor" component={Factor} options={{headerShown: false}} />

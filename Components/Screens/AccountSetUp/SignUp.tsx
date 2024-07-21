@@ -27,6 +27,7 @@ const SignUp = () => {
   const [referrer, setReferrer] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [isCheckedNewsletter, setIsCheckedNewsletter] = useState(false);
   const [isCheckedTerms1, setIsCheckedTerms1] = useState(false);
   const [isCheckedTerms2, setIsCheckedTerms2] = useState(false);
@@ -58,10 +59,12 @@ const SignUp = () => {
           lastName,
           email,
           password,
+          phone
         }),
       });
       const data = await response.json();
       if (response.status === 201) {
+        await SecureStore.setItemAsync('userID', data.data.user_Id);
         console.log('Signup Successful');
         await SecureStore.setItemAsync('email', email);
         navigation.navigate('EmailVerif');
@@ -97,6 +100,7 @@ const SignUp = () => {
               {renderInput("Last Name", lastName, setLastName)}
               {renderInput("Email Address", email, setEmail)}
               {renderInput("Password", password, setPassword)}
+              {renderInput("Phone", phone, setPhone)}
               {renderInput("Referrer", referrer, setReferrer)}
 
               <Checkbox

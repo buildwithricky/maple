@@ -6,20 +6,70 @@ import {
   SafeAreaView,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import CustomButton from '../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
+import { API_URl } from '@env';
 
 const Pin = () => {
   const navigation = useNavigation<ScreenNavigationProp<'settings'>>();
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const updatePassword = async () => {
+    setLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) {
+        Alert.alert('Error', 'No token found');
+        return;
+      }
+
+      const response = await fetch(`${API_URl}/user/update-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert('Success', data.message);
+        navigation.navigate('settings');
+      } else {
+        Alert.alert('Error', data.message || 'Unknown error');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('Error', error.message);
+      } else {
+        Alert.alert('Error', 'An unknown error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
+    <>
+      {loading && (
+        <View style={styles.overlay}>
+          <ActivityIndicator size="large" color="#ff6a00" />
+        </View>
+      )}
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.content}>
         <Text style={styles.title}>Change Password</Text>
@@ -27,10 +77,10 @@ const Pin = () => {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.inputBox}
-            placeholder="New Password"
+            placeholder="Current Password"
             secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={setPassword}
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
           />
           <TouchableOpacity
             style={styles.eyeIcon}
@@ -42,10 +92,10 @@ const Pin = () => {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.inputBox}
-            placeholder="Re-enter New Password"
+            placeholder="New Password"
             secureTextEntry={!showConfirmPassword}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            value={newPassword}
+            onChangeText={setNewPassword}
           />
           <TouchableOpacity
             style={styles.eyeIcon}
@@ -60,10 +110,11 @@ const Pin = () => {
           width={"100%"}
           gradientColors={['#ee0979', '#ff6a00']}
           title="Confirm"
-          onPress={() => navigation.navigate('settings')}
+          onPress={updatePassword}
         />
       </View>
     </SafeAreaView>
+    </>
   );
 };
 
@@ -73,10 +124,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     marginTop: 30
   },
-  header: {
-    flexDirection: 'row',
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    zIndex: 20
   },
   content: {
     paddingHorizontal: 20,

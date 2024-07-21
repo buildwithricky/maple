@@ -27,7 +27,7 @@ const SignIn = () => {
   const [password, setPassword] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation<ScreenNavigationProp<'Reset' | 'Returning' | 'SignUp' | 'EmailVerif'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Reset' | 'Returning' | 'SignUp' | 'EmailVerif' | 'CreatePin'>>();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -82,12 +82,16 @@ const SignIn = () => {
       });
 
       const data = await response.json();
+      console.log('Response data:', data);  // Log the response data
+
       setLoading(false);
       if (response.ok) {
-          await SecureStore.setItemAsync('firstName', data.data.firstName);
-          await SecureStore.setItemAsync('lastName', data.data.lastname);
-          await SecureStore.setItemAsync('email', data.data.mail.email);
-          await SecureStore.setItemAsync('token', data.data.token);
+        await SecureStore.setItemAsync('firstName', data.data.firstName);
+        await SecureStore.setItemAsync('lastName', data.data.lastname);
+        await SecureStore.setItemAsync('email', data.data.mail.email);
+        await SecureStore.setItemAsync('token', data.data.token);
+        await SecureStore.setItemAsync('id', data.data._id);
+        console.log('User ID:', data.data._id);  // Log the user ID
         navigation.navigate('Homepage');
       } else if (data.message === 'Verify your mail') {
         Alert.alert(
@@ -100,11 +104,24 @@ const SignIn = () => {
             },
           ]
         );
+      } else if (data.success === true) {
+        Alert.alert(
+          'PIN Required',
+          'PIN not created. Please set up your transaction PIN.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('CreatePin'),
+            },
+          ]
+        );
       } else {
+        console.log('Login failed:', data.message);  // Log the error message
         Alert.alert('Login failed', data.message || 'Unknown Error');
       }
     } catch (error) {
       setLoading(false);
+      console.log('Login error:', error);  // Log the error details
       Alert.alert('Login error', (error as Error).message);
     }
   };

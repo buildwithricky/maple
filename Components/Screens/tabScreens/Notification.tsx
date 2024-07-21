@@ -18,7 +18,7 @@ const Notification = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(`${API_URl}/notification`, {
+        const response = await fetch(`${API_URl}/api/notification`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

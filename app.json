@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.mapple",
       "config": {
         "usesNonExemptEncryption": false
       }
@@ -16,11 +17,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.yourcompany.mapple"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "mapple",
     "plugins": [
       "expo-asset",
       "expo-font"
