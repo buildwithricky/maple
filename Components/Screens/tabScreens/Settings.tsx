@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
@@ -29,16 +29,35 @@ const sections = [
       { image: require('../../../assets/MappleApp/two_factor.png'), text: 'Two Factor Verification', navigateTo: 'AccountVerification', rightIcon: 'toggle2' },
       { image: require('../../../assets/MappleApp/devices.png'), text: 'Devices and Sessions', navigateTo: 'Device' },
       { image: require('../../../assets/MappleApp/change_pin.png'), text: 'Change your Pin', navigateTo: 'Change' },
+      { image: require('../../../assets/MappleApp/change_pin.png'), text: 'Logout', navigateTo: 'Logout'  },
     ]
   },
 ];
 
-const Settings = () => {
+
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Settings: {setIsUserLoggedIn: (loggedIn: boolean) => void };
+
+};
+
+
+type ReturningScreenRouteProp = RouteProp<RootStackParamList, 'Settings'>
+
+
+const Settings = ({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) => {
   const navigation = useNavigation<ScreenNavigationProp<'Profile' | 'Verification_01' | 'notification' | 'RateAlerts' | 'Transaction' | 'Pin' | 'AccountVerification' | 'Device' | 'Change'>>();
   const [isSwitchOn1, setIsSwitchOn1] = useState(false);
   const [isSwitchOn2, setIsSwitchOn2] = useState(false);
   const [loading, setLoading] = useState(false);
+  // const route = useRoute<ReturningScreenRouteProp>();
+  // const {setIsUserLoggedIn } = route.params;
+  
 
+
+// console.log(setIsUserLoggedIn)
   const toggleSwitch1 = () => setIsSwitchOn1(previousState => !previousState);
 
   const toggleSwitch2 = async () => {
@@ -91,7 +110,31 @@ const Settings = () => {
                   <TouchableOpacity
                     key={idx}
                     style={styles.row}
-                    onPress={() => navigation.navigate(item.navigateTo)}
+                    onPress={() => {
+                      if (item.navigateTo === 'Logout') {
+                        console.log("logging out")
+                      const clearUserInfo = async ()=>{
+                        await Promise.all([
+                          SecureStore.deleteItemAsync('firstName'),
+                          SecureStore.deleteItemAsync('lastName'),
+                          SecureStore.deleteItemAsync('email'),
+                          SecureStore.deleteItemAsync('token'),
+                          SecureStore.deleteItemAsync('id'),
+                        ]).then(() => {
+                          setIsUserLoggedIn(false);
+                          setActiveToken("")
+                          setPinLoggedIn(false)
+                          navigation.navigate("SignIn")
+
+                        });
+                      
+                      }
+                      clearUserInfo();
+                      return;
+                      }
+                      navigation.navigate(item.navigateTo)
+                    
+                    }}
                   >
                     <View style={styles.rowLeft}>
                       <Image source={item.image} style={styles.icon} />

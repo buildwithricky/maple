@@ -22,7 +22,7 @@ import AnimatedInput from '../Assecories/AnimatedInput';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
 
-const SignIn = () => {
+const SignIn = ({setIsUserLoggedIn}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -90,6 +90,7 @@ const SignIn = () => {
           await SecureStore.setItemAsync('token', data.data.token);
           await SecureStore.setItemAsync('id', data.data._id);
           console.log(data.data._id)
+          setIsUserLoggedIn(true);
         navigation.navigate('Homepage');
       } else if (data.message === 'Verify your mail') {
         Alert.alert(

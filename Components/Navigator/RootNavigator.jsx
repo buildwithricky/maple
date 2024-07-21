@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect,useState } from 'react';
 import { Platform, LogBox, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import OnboardingScreen from '../Screens/Onboarding';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import {
   HomeIcon as HomeOutline,
   UserIcon as UserIconOutline,
@@ -116,7 +117,8 @@ const tabScreenOptions = {
   }
 };
 
-function HomeTabs() {
+function HomeTabs({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) {
+  console.log(setIsUserLoggedIn);
   return (
     <View style={styles.container}>
       <Tab.Navigator
@@ -139,7 +141,9 @@ function HomeTabs() {
         <Tab.Screen name="home" component={HomeStackScreen} />
         <Tab.Screen name="exchange" component={Exchange} options={{ ...tabScreenOptions, headerTitle: "Exchange" }} />
         <Tab.Screen name="notification" component={NotificationScreen} options={{ ...tabScreenOptions, headerTitle: "Notification" }} />
-        <Tab.Screen name="settings" component={Settings} options={{ ...tabScreenOptions, headerTitle: "Account Settings" }} />
+        <Tab.Screen name="settings"  options={{ ...tabScreenOptions, headerTitle: "Account Settings" }} >
+        {()=><Settings setIsUserLoggedIn={setIsUserLoggedIn} setActiveToken={setActiveToken} setPinLoggedIn={setPinLoggedIn}/>}
+        </Tab.Screen>
       </Tab.Navigator>
     </View>
   );
@@ -173,10 +177,41 @@ function ProfileStackScreen() {
 
 export default function RootNavigator() {
   LogBox.ignoreLogs(['Non-serializable values were found in the navigation state']);
+const [activeToken , setActiveToken] = useState("")
+const [isUserLoggedIn,setIsUserLoggedIn] = useState(false)
+const [pinLoggedIn, setPinLoggedIn] = useState(false)
+
+  useEffect(() => {
+// fetch returning user token 
+const getTokenFromSecureStore= async ()=>{
+  console.log("running")
+const token =  await SecureStore.getItemAsync('token');
+  if(token){
+    setActiveToken(token)
+    setIsUserLoggedIn(true)
+  }
+  else {
+setIsUserLoggedIn(false)
+  }
+}
+
+getTokenFromSecureStore()
+  },[isUserLoggedIn])
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
+      <NavigationContainer
+      linking={{
+        prefixes: ['mapple://'],
+        config: {
+          screens: {
+            Reset3: 'Reset3',
+            ResetPassword: 'reset-password/:token',
+          },
+        },
+      }}
+      >
         <Stack.Navigator
             initialRouteName="Onboarding"
             screenOptions={{
@@ -191,24 +226,52 @@ export default function RootNavigator() {
             }}
           >
           {/* Onboarding Screens */}
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="SignIn" component={SignIn} options={{ headerShown: false }} />
-          <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
+          {
+            isUserLoggedIn ?
+          <>
           {/* returning User Screen */}
-          <Stack.Screen name="Returning" component={Returning} options={{ headerShown: false }} />
-          {/* Email Verification screens */}
-          <Stack.Screen name="EmailVerif" component={EmailVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
-          <Stack.Screen name="EmailVerif2" component={EmailVerif2} options={{ headerShown: false }} />
-          <Stack.Screen name="EmailVerif3" component={EmailVerif3} options={{ headerShown: false }} />
-          <Stack.Screen name="CreatePin" component={CreatePin} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
-          <Stack.Screen name="CreatePin3" component={CreatePin3} options={{ headerShown: false }} />
+          {
+          !pinLoggedIn && 
+          <Stack.Screen name="Returning" 
+          initialParams={{pinLoggedIn,setPinLoggedIn}}
+          component={Returning} options={{ headerShown: false }} />
+          }
+          </>
+            :
+            // None Authenticated Screens
+            <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SignIn" options={{ headerShown: false }} >
+              {()=><SignIn setIsUserLoggedIn={setIsUserLoggedIn}/>}
+            </Stack.Screen>
+            <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
+  
+            {/* Email Verification screens */}
+            <Stack.Screen name="EmailVerif" component={EmailVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
+            <Stack.Screen name="EmailVerif2" component={EmailVerif2} options={{ headerShown: false }} />
+            <Stack.Screen name="EmailVerif3" component={EmailVerif3} options={{ headerShown: false }} />
+            <Stack.Screen name="CreatePin" component={CreatePin} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
+            <Stack.Screen name="CreatePin3" component={CreatePin3} options={{ headerShown: false }} />
+  
+        
+            {/* Reset pass screen */}
+            <Stack.Screen name="Reset" component={Reset} options={{ ...tabScreenOptions, headerTitle: "1 of 4" }} />
+            <Stack.Screen name="Reset2" component={Reset2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} />
+            <Stack.Screen name="Reset3" component={Reset3} options={{ ...tabScreenOptions, headerTitle: "3 of 4" }} />
+            <Stack.Screen name="Reset4" component={Reset4}  options={{ ...tabScreenOptions, headerTitle: "4 of 4" }} />
+  
+            
+            </>
+          }
+         
+
+         {isUserLoggedIn &&
+<>
+
           {/* HomePage after login */}
-          <Stack.Screen name="Homepage" component={HomeTabs} options={{ headerShown: false }} />
-          {/* Reset pass screen */}
-          <Stack.Screen name="Reset" component={Reset} options={{ ...tabScreenOptions, headerTitle: "1 of 4" }} />
-          <Stack.Screen name="Reset2" component={Reset2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} />
-          <Stack.Screen name="Reset3" component={Reset3} options={{ ...tabScreenOptions, headerTitle: "3 of 4" }} />
-          <Stack.Screen name="Reset4" component={Reset4}  options={{ ...tabScreenOptions, headerTitle: "4 of 4" }} />
+          <Stack.Screen name="Homepage"  options={{ headerShown: false }}  >
+          {() => <HomeTabs setIsUserLoggedIn={setIsUserLoggedIn} setActiveToken={setActiveToken} setPinLoggedIn={setPinLoggedIn}/>}
+          </Stack.Screen>
           {/* Account Verification Screens */}
           <Stack.Screen name="Verification_01" component={Verification_01} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }}   />
           <Stack.Screen name="Verification_02" component={Verification_02} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
@@ -249,6 +312,8 @@ export default function RootNavigator() {
           <Stack.Screen name="Change2" component={Change2} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
           <Stack.Screen name="Change3" component={Change3} options={{headerShown: false}} />
           {/* <Stack.Screen name="Notification" component={Notification} options={{ headerShown: false }} /> */}
+          </>
+}
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>

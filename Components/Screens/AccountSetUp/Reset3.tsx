@@ -14,7 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AnimatedInput from '../Assecories/AnimatedInput';
 import Checkbox from '../Assecories/Checkbox';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
@@ -27,6 +27,16 @@ const Reset3 = () => {
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+
+  const route = useRoute();
+  const { token } = route.params;
+  console.log(token)
+
+  const handleResetPassword = () => {
+    // Handle password reset logic
+    console.log('Token:', token);
+  };
+
 
   const navigation = useNavigation<ScreenNavigationProp<'Reset4'>>();
 

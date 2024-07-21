@@ -9,19 +9,40 @@ import {
   SafeAreaView,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import DialPad from '../AccountSetUp/SignUp/DialPad';
 import { ScreenNavigationProp } from '../../../navigation';
 import axios from 'axios'; // Import axios for HTTP requests
 
+// TODO:take the base url to .env
 const API_URL = 'https://maplepay-server.onrender.com/api';
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  Returning: { pinLoggedIn: boolean; setPinLoggedIn: (loggedIn: boolean) => void };
+  Reset: undefined;
+  SignIn: undefined;
+  Homepage: undefined;
+  // ... other routes
+};
+
+
+type ReturningScreenRouteProp = RouteProp<RootStackParamList, 'Returning'>;
+
+
 
 const Returning = () => {
   const navigation = useNavigation<ScreenNavigationProp<'Reset' | 'SignIn'>>();
+
   const [code, setCode] = useState(['', '', '', '']);
   const [refreshing, setRefreshing] = useState(false);
+
+  const route = useRoute<ReturningScreenRouteProp>();
+  const { pinLoggedIn, setPinLoggedIn } = route.params;
+
 
   const handleResendCode = async () => {
     setRefreshing(true);
@@ -43,6 +64,7 @@ const Returning = () => {
     setCode(newCode);
 
     if (newCode.every(digit => digit !== '')) {
+      setPinLoggedIn(true)
       navigation.navigate('Homepage');
     }
   };
