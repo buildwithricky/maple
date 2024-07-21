@@ -1,33 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
 
-// Initial notifications state
-const notifications = [
-  { id: 1, message: "Transaction Confirmation", date: "Your CAD to Naira exchange of $100 was successful. You've received N38,000 in your account.", image: require("../../../assets/MappleApp/icon_11.png") },
-  { id: 2, message: "Exchange Rate Alerts", date: "CAD to Naira exchange rate has increased! Now's a great time to swap currencies.", image: require("../../../assets/MappleApp/icon_12.png") },
-  { id: 3, message: "Security Alerts", date: "Unusual Activity detected on your account. Please verify your recent transactions.", image: require("../../../assets/MappleApp/icon_13.png") },
-  { id: 4, message: "Account Verification", date: "Complete your account verification process to unlock higher exchange limits and additional features.", image: require("../../../assets/MappleApp/icon_14.png") },
-];
+type NotificationType = {
+  id: string;
+  title: string;
+  description: string;
+  image: any;
+};
 
 const Notification = () => {
   const [markAllRead, setMarkAllRead] = useState(false);
-  const [notificationList, setNotificationList] = useState(notifications);
+  const [notificationList, setNotificationList] = useState<NotificationType[]>([]);
+
+  const getNotificationImage = (title: string) => {
+    switch (title) {
+      case "Security Alert":
+        return require("../../../assets/MappleApp/icon_13.png");
+      case "Transaction Confirmation":
+        return require("../../../assets/MappleApp/icon_12.png");
+      case "Exchange Rate Alerts":
+        return require("../../../assets/MappleApp/icon_12.png");
+      case "Account Verification":
+        return require("../../../assets/MappleApp/icon_14.png");
+      default:
+        return require("../../../assets/MappleApp/icon_14.png");
+    }
+  };
 
   // Fetch notifications from API
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(`${API_URl}/api/notification`, {
+        const token = await SecureStore.getItemAsync('token');
+        const response = await fetch(`${API_URl}/notification/user`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
         });
 
         const data = await response.json();
         if (response.ok) {
-          setNotificationList(data.notifications);
+          if (Array.isArray(data.data.data)) {
+            const notificationsWithImages = data.data.data.map((notification: { _id: string; title: string; description: string; }) => ({
+              id: notification._id,
+              title: notification.title,
+              description: notification.description,
+              image: getNotificationImage(notification.title),
+            }));
+            setNotificationList(notificationsWithImages);
+            console.log('Fetched notifications:', notificationsWithImages);
+          } else {
+            console.error('Invalid notifications format:', data.data);
+          }
         } else {
           console.error('Failed to fetch notifications:', data.message);
         }
@@ -41,10 +69,12 @@ const Notification = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
+      const token = await SecureStore.getItemAsync('token');
       const response = await fetch(`${API_URl}/notifications/mark-all-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       });
 
@@ -66,7 +96,6 @@ const Notification = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-
         <View style={styles.headerRow}>
           <Text style={styles.todayText}>TODAY</Text>
           <TouchableOpacity onPress={handleMarkAllAsRead}>
@@ -78,8 +107,8 @@ const Notification = () => {
           <View key={notification.id} style={styles.notificationRow}>
             <Image source={notification.image} style={styles.notificationImage} />
             <View style={styles.notificationTextContainer}>
-              <Text style={styles.notificationMessage}>{notification.message}</Text>
-              <Text style={styles.notificationDate}>{notification.date}</Text>
+              <Text style={styles.notificationMessage}>{notification.title}</Text>
+              <Text style={styles.notificationDate}>{notification.description}</Text>
             </View>
           </View>
         ))}

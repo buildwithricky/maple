@@ -8,10 +8,18 @@ import BottomSheetModal2 from '../Assecories/Modal/Modal2';
 import { useNavigation } from '@react-navigation/native';
 import HomeTab from '../Assecories/HomeTab';
 import CustomButton from '../Assecories/CustomButton';
-import transactions from '../../../data/transaction';
 import { ScreenNavigationProp } from '../../../navigation';
+import { API_URl } from '@env';
 
 type ValidScreen = 'Home' | 'Transactions' | 'notification' | 'Verification_01' | 'Send' | 'Swap';
+
+type TransactionType = {
+  id: string;
+  type: string;
+  currency: string;
+  amount: string;
+  date: string;
+};
 
 export default function Home() {
   const navigation = useNavigation<ScreenNavigationProp<ValidScreen>>();
@@ -21,21 +29,51 @@ export default function Home() {
   const [currency, setCurrency] = useState('CAD'); // State for currency
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [transactions, setTransactions] = useState<TransactionType[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchNames = async () => {
       try {
         const storedFirstName = await SecureStore.getItemAsync('firstName');
-        const storedLastName = await SecureStore.getItemAsync('lastName'); // This line is correct now
+        const storedLastName = await SecureStore.getItemAsync('lastName');
         if (storedFirstName) setFirstName(storedFirstName);
         if (storedLastName) setLastName(storedLastName);
       } catch (error) {
         console.error('Failed to fetch names from SecureStore', error);
       }
     };
-  
+
+    const fetchTransactions = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        const response = await fetch(`${API_URl}/transaction/user?page=${currentPage}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const result = await response.json();
+        if (result.success) {
+          setTransactions(result.data.data);
+          setTotalPages(result.data.totalPages);
+        } else {
+          console.error('Error fetching transactions:', result.message);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    };
+
     fetchNames();
-  }, []);  
+    fetchTransactions();
+  }, [currentPage]);
+
+  const loadMoreTransactions = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   const handleNotificationPress = () => {
     setModalVisible(false);
@@ -102,8 +140,7 @@ export default function Home() {
             <View style={styles.greetingContainer}>
               <Text style={styles.helloText}>Hello,</Text>
               <Text style={styles.nameText}>{lastName} {firstName} </Text>
-               {/* Verified Icon */}
-               <Ionicons name="checkmark-circle" size={20} color="red"/>
+              <Ionicons name="checkmark-circle" size={20} color="red"/>
             </View>
             <TouchableOpacity style={styles.notificationContainer} onPress={handleNotificationPress}>
               <Ionicons name="notifications" size={24} color="black" />
@@ -176,7 +213,6 @@ export default function Home() {
         </SafeAreaView>
       </ScrollView>
 
-      {/* Modals outside of SafeAreaView and ScrollView */}
       <BottomSheetModal
         isVisible={modalVisible}
         onClose={closeModal}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import DialPad from '../AccountSetUp/SignUp/DialPad';
 import { ScreenNavigationProp } from '../../../navigation';
 import axios from 'axios'; // Import axios for HTTP requests
+import * as SecureStore from 'expo-secure-store';
 
 // TODO:take the base url to .env
 const API_URL = 'https://maplepay-server.onrender.com/api';
@@ -104,6 +105,23 @@ const Returning = () => {
     }
   };
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  useEffect(() => {
+    const fetchNames = async () => {
+      try {
+        const storedFirstName = await SecureStore.getItemAsync('firstName');
+        const storedLastName = await SecureStore.getItemAsync('lastName'); // This line is correct now
+        if (storedFirstName) setFirstName(storedFirstName);
+        if (storedLastName) setLastName(storedLastName);
+      } catch (error) {
+        console.error('Failed to fetch names from SecureStore', error);
+      }
+    };
+  
+    fetchNames();
+  }, []);  
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -114,10 +132,10 @@ const Returning = () => {
               style={styles.image}
             />
             <Text style={styles.title}>
-              Welcome Back, <Text style={styles.title_two}>Adaeze</Text>
+              Welcome Back, <Text style={styles.title_two}>{firstName} {lastName}</Text>
             </Text>
             <Text style={styles.mainText}>
-              Not Adaeze?{' '}
+              Not {firstName}?{' '}
               <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
                 <Text style={styles.linkText}>Sign Out</Text>
               </TouchableOpacity>
