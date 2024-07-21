@@ -104,7 +104,7 @@ const SignIn = () => {
             },
           ]
         );
-      } else if (data.success === true) {
+      } else if (data.success === 'OTP has been sent to your email address. Please check your email.') {
         Alert.alert(
           'PIN Required',
           'PIN not created. Please set up your transaction PIN.',
