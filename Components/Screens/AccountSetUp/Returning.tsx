@@ -14,13 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import DialPad from '../AccountSetUp/SignUp/DialPad';
 import { ScreenNavigationProp } from '../../../navigation';
-import axios from 'axios'; // Import axios for HTTP requests
 import * as SecureStore from 'expo-secure-store';
+import { API_URl } from '@env';
 
-// TODO:take the base url to .env
-const API_URL = 'https://maplepay-server.onrender.com/api';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 type RootStackParamList = {
   Returning: { pinLoggedIn: boolean; setPinLoggedIn: (loggedIn: boolean) => void };
@@ -30,34 +29,17 @@ type RootStackParamList = {
   // ... other routes
 };
 
-
 type ReturningScreenRouteProp = RouteProp<RootStackParamList, 'Returning'>;
-
-
 
 const Returning = () => {
   const navigation = useNavigation<ScreenNavigationProp<'Reset' | 'SignIn'>>();
-
   const [code, setCode] = useState(['', '', '', '']);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [pinError, setPinError] = useState(false);
 
   const route = useRoute<ReturningScreenRouteProp>();
   const { pinLoggedIn, setPinLoggedIn } = route.params;
-
-
-  const handleResendCode = async () => {
-    setRefreshing(true);
-    try {
-      const response = await axios.post(`${API_URL}/resend-code`, {
-        // Add request body here if needed
-      });
-      console.log(response.data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
@@ -65,8 +47,39 @@ const Returning = () => {
     setCode(newCode);
 
     if (newCode.every(digit => digit !== '')) {
-      setPinLoggedIn(true)
-      navigation.navigate('Homepage');
+      confirmPin(newCode.join(''));
+    }
+  };
+
+  const confirmPin = async (pin: string) => {
+    setLoading(true);
+    setPinError(false);
+    console.log(`Sending PIN: ${pin}`); // Log the PIN being sent
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const response = await fetch(`${API_URl}/user/confirm-pin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ pin }),
+      });
+
+      const responseData = await response.json();
+      console.log('Response:', responseData); // Log the response
+
+      if (responseData.success) {
+        setPinLoggedIn(true);
+        navigation.navigate('Homepage');
+      } else {
+        setPinError(true);
+      }
+    } catch (error) {
+      console.error('Error confirming PIN:', error);
+      setPinError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,16 +124,16 @@ const Returning = () => {
     const fetchNames = async () => {
       try {
         const storedFirstName = await SecureStore.getItemAsync('firstName');
-        const storedLastName = await SecureStore.getItemAsync('lastName'); // This line is correct now
+        const storedLastName = await SecureStore.getItemAsync('lastName');
         if (storedFirstName) setFirstName(storedFirstName);
         if (storedLastName) setLastName(storedLastName);
       } catch (error) {
         console.error('Failed to fetch names from SecureStore', error);
       }
     };
-  
+
     fetchNames();
-  }, []);  
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -146,7 +159,7 @@ const Returning = () => {
             {code.map((digit, index) => (
               <TextInput
                 key={index}
-                style={styles.inputCode}
+                style={[styles.inputCode, pinError && { borderColor: 'red' }]}
                 value={digit}
                 onChangeText={() => {}}
                 keyboardType="numeric"
@@ -156,6 +169,7 @@ const Returning = () => {
               />
             ))}
           </View>
+          {pinError && <Text style={styles.errorText}>Incorrect PIN</Text>}
 
           <Text style={styles.mainText}>
             Forgotten PIN?{' '}
@@ -166,6 +180,7 @@ const Returning = () => {
 
           <View style={styles.dialPadContainer}>
             <DialPad onPress={handleDialPadPress} fingerprintPress={handleFingerprintLogin} />
+            {loading && <SpinnerOverlay />}
           </View>
         </View>
       </ScrollView>
@@ -243,7 +258,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     marginTop: 10,
-    marginBottom: 30
+    marginBottom: 30,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: -10,
   },
 });
 

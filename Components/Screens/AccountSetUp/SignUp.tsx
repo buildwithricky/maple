@@ -20,6 +20,7 @@ import * as SecureStore from 'expo-secure-store';
 import Checkbox from '../Assecories/Checkbox';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 const SignUp = () => {
   const [firstName, setFirstName] = useState('');
@@ -79,6 +80,7 @@ const SignUp = () => {
   };
 
   return (
+    <>
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.container}
@@ -101,6 +103,7 @@ const SignUp = () => {
               {renderInput("Email Address", email, setEmail)}
               {renderInput("Password", password, setPassword)}
               {renderInput("Phone", phone, setPhone)}
+              <Text style={{color: "#ccc", textAlign: "left"}}>Optional</Text>
               {renderInput("Referrer", referrer, setReferrer)}
 
               <Checkbox
@@ -116,11 +119,7 @@ const SignUp = () => {
                 onPress={() => setIsCheckedTerms2(!isCheckedTerms2)}
                 text="I also confirm that I am opening this account for my personal use and not for use by a third party."
               />
-              <Checkbox
-                isChecked={isCheckedNewsletter}
-                onPress={() => setIsCheckedNewsletter(!isCheckedNewsletter)}
-                text="Check this box to stay updated with similar Maple Pay products and services by email and other means."
-              />
+              <Text>Please Note: Two boxes above must be checked to move forward</Text>
 
               <View style={styles.buttonContainer}>
                 <CustomButton
@@ -140,13 +139,10 @@ const SignUp = () => {
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color="#ff6a00" />
-          </View>
-        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
+      {loading && <SpinnerOverlay />}
+    </>
   );
 };
 
@@ -196,15 +192,7 @@ const styles = StyleSheet.create({
     color: 'grey',
     textAlign: 'center',
     marginBottom: 14,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: "100%",
-    height: "100%",
-  },
+  }
 });
 
 export default SignUp;

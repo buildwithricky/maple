@@ -46,8 +46,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "6fa4f4f1-d5e1-4d3b-93ad-705f5c1555b1"
+        "projectId": "b3e04ccb-d5d7-4a16-addd-6944dbfe1048"
       }
-    }
+    },
+    "owner": "ufuoma123"
   }
 }

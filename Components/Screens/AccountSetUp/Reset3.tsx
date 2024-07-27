@@ -1,196 +1,238 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
-  SafeAreaView,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
   TouchableOpacity,
   ScrollView,
+  SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
-import CustomButton from '../Assecories/CustomButton';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import AnimatedInput from '../Assecories/AnimatedInput';
-import Checkbox from '../Assecories/Checkbox';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
+import { API_URl } from '@env';
 import { ScreenNavigationProp } from '../../../navigation';
-
+import DialPad from './SignUp/DialPad';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 const Reset3 = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-
-  const route = useRoute();
-  const { token } = route.params;
-  console.log(token)
-
-  const handleResetPassword = () => {
-    // Handle password reset logic
-    console.log('Token:', token);
-  };
-
-
-  const navigation = useNavigation<ScreenNavigationProp<'Reset4'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Reset5' | 'Reset'>>();
+  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      (event) => {
-        setKeyboardOffset(event.endCoordinates.height);
+    const getEmail = async () => {
+      try {
+        const storedEmail = await SecureStore.getItemAsync('email');
+        if (storedEmail !== null) {
+          setEmail(storedEmail);
+        }
+      } catch (error) {
+        console.error('Failed to load email.', error);
       }
-    );
-
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardOffset(0);
-      }
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
     };
+
+    getEmail();
   }, []);
 
+  const handleResendCode = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 3000); // Show refreshing gif for 3 seconds
+  };
+
+  const handleInputChange = (index: number, value: string) => {
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+
+    // Check if all code inputs are filled
+    if (newCode.every(digit => digit !== '')) {
+      console.log('OTP entered:', newCode.join('')); // Log the OTP being sent
+      verifyOtp(newCode.join(''));
+    } else {
+      setError(false); // Reset error state if not all inputs are filled
+    }
+  };
+
+  const handleDialPadPress = (value: string) => {
+    if (value === 'Del') {
+      const lastNonEmptyIndex = code.map((val, index) => (val ? index : null)).filter(index => index !== null).pop();
+      if (typeof lastNonEmptyIndex === 'number') {
+        handleInputChange(lastNonEmptyIndex, '');
+      }
+    } else if (value !== '') {
+      const firstEmptyIndex = code.findIndex(val => val === '');
+      if (firstEmptyIndex !== -1) {
+        handleInputChange(firstEmptyIndex, value);
+      }
+    }
+  };
+
+  const verifyOtp = async (otp: string) => {
+    setLoading(true);
+    setError(false);
+    try {
+      const response = await fetch(`${API_URl}/user/password/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ otp }),
+      });
+
+      const data = await response.json();
+      console.log('Response from server:', data); // Log the server response
+
+      if (data.success) {
+        await SecureStore.setItemAsync('resetPassToken', data.data.token);
+        navigation.navigate('Reset5');
+      } else {
+        setError(true);
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ScrollView>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={keyboardOffset}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <SafeAreaView style={styles.loadingContainer}>
-            <View style={styles.contentContainer}>
-              <Image
-                source={require('../../../assets/MappleApp/logo.png')}
-                style={styles.image}
-              />
-              <Text style={styles.title}>Reset Password</Text>
-              <Text style={styles.subtitle}>
-                To reset your password, please enter a new password. Make sure your new password is strong and secure. 
-              </Text>
-            </View>
+    <SafeAreaView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.loadingContainer}>
+          <View style={styles.contentContainer}>
+            <Text style={styles.title_two}>Verify OTP To Change Password</Text>
+            <Text style={styles.subtitle}>Enter the 6 digit code sent to</Text>
+            <Text style={styles.subtitle_two}>{email}</Text>
+            <TouchableOpacity style={styles.editEmailContainer} onPress={() => navigation.navigate('Reset')}>
+              <FontAwesome name="edit" size={16} color="green" />
+              <Text style={styles.editEmailText}>Edit Email Address</Text>
+            </TouchableOpacity>
+          </View>
 
-          {/* Password Input */}
-          <AnimatedInput
-            placeholder="Password"
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-          />
-          {/* Password Input */}
-          <AnimatedInput
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChangeText={(text) => setConfirmPassword(text)}
-          />
-
-            {/* Button */}
-            <View style={styles.buttonContainer}>
-              <CustomButton
-                width={"100%"}
-                gradientColors={['#ee0979', '#ff6a00']}
-                title="Confirm"
-                onPress={() => navigation.navigate('Reset4')}
+          <View style={styles.inputCodeContainer}>
+            {code.map((digit, index) => (
+              <TextInput
+                key={index}
+                style={[styles.inputCode, error && styles.inputCodeError]}
+                value={digit}
+                onChangeText={(value) => handleInputChange(index, value)}
+                keyboardType="numeric"
+                maxLength={1}
               />
-            </View>
-          </SafeAreaView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    </ScrollView>
+            ))}
+          </View>
+          {error && <Text style={styles.errorMessage}>Invalid OTP, Please Retry</Text>}
+
+          <TouchableOpacity style={styles.resendContainer} onPress={handleResendCode}>
+            {refreshing ? (
+              <ActivityIndicator size="small" color="green" />
+            ) : (
+              <>
+                <Text style={styles.resendText}>Resend Code</Text>
+                <Ionicons name="arrow-forward" size={16} color="#1C202B" />
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.dialPadContainer}>
+            <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+            {loading && <SpinnerOverlay />}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 15, 
+    paddingBottom: 15,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: '5%',
     width: '100%',
   },
-  mainText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  linkText: {
-    fontWeight: 'bold',
-  },
   contentContainer: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    justifyContent: 'center',
-    marginBottom: 13,
-  },
-  image: {
-    marginBottom: 25,
-    marginTop: 70,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  title_two: {
+    fontSize: 23,
     textAlign: 'center',
-    marginBottom: 9,
+    paddingBottom: 12,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: 'grey',
     textAlign: 'center',
-    marginBottom: 14,
   },
-  inputContainer: {
-    width: '100%',
-    borderRadius: 8,
-    borderColor: 'grey',
-    borderWidth: 1,
+  subtitle_two: {
+    fontSize: 16,
+    textAlign: 'center',
     marginBottom: 10,
-    paddingHorizontal: 10,
-    alignItems: 'flex-start',
   },
-  placeholder: {
-    position: 'absolute',
-    left: 10,
-    top: -8,
-    backgroundColor: 'white',
-    paddingHorizontal: 5,
-    fontSize: 12,
-    color: '#888',
-  },
-  passwordContainer: {
+  editEmailContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
   },
-  input: {
-    flex: 1,
-    height: 35,
-    fontSize: 16,
-    marginTop: 8,
-    textAlign: 'left',
+  editEmailText: {
+    fontSize: 14,
+    color: 'green',
+    marginLeft: 5,
   },
-  eyeIcon: {
-    padding: 5,
+  inputCodeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    marginBottom: 20,
+    marginVertical: 25,
+  },
+  inputCode: {
+    width: 45,
+    height: 45,
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 18,
+    marginHorizontal: 5,
+  },
+  inputCodeError: {
+    borderColor: '#F37A74',
+  },
+  errorMessage: {
+    color: '#EE4139',
+    marginBottom: 20,
+  },
+  resendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '10%',
+  },
+  resendText: {
+    fontSize: 14,
+    color: '#1C202B',
+    marginRight: 5,
+    fontWeight: 'bold',
+  },
+  dialPadContainer: {
+    marginTop: 20,
+    position: 'relative',
   },
 });
 

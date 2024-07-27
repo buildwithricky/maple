@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import CustomButton2 from '../Assecories/CustomButton2';
@@ -10,6 +10,7 @@ import HomeTab from '../Assecories/HomeTab';
 import CustomButton from '../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
+import { BlurView } from 'expo-blur';
 
 type ValidScreen = 'Home' | 'Transactions' | 'notification' | 'Verification_01' | 'Send' | 'Swap';
 
@@ -32,6 +33,7 @@ export default function Home() {
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
     const fetchNames = async () => {
@@ -65,8 +67,20 @@ export default function Home() {
       }
     };
 
+    const checkVerificationStatus = async () => {
+      try {
+        const isVerified = await SecureStore.getItemAsync('accountVerif');
+        if (isVerified) {
+          setIsVerified(isVerified === 'true');
+        }
+      } catch (error) {
+        console.error('Failed to fetch verification status from SecureStore', error);
+      }
+    };
+
     fetchNames();
     fetchTransactions();
+    checkVerificationStatus();
   }, [currentPage]);
 
   const loadMoreTransactions = () => {
@@ -139,8 +153,8 @@ export default function Home() {
             />
             <View style={styles.greetingContainer}>
               <Text style={styles.helloText}>Hello,</Text>
-              <Text style={styles.nameText}>{lastName} {firstName} </Text>
-              <Ionicons name="checkmark-circle" size={20} color="red"/>
+              <Text style={styles.nameText}>{lastName} {firstName}</Text>
+              {isVerified && <Ionicons name="checkmark-circle" size={20} color="red" />}
             </View>
             <TouchableOpacity style={styles.notificationContainer} onPress={handleNotificationPress}>
               <Ionicons name="notifications" size={24} color="black" />
@@ -155,6 +169,9 @@ export default function Home() {
               <Text style={styles.walletAmountText}>
                 {currency === 'CAD' ? '$1000.00' : '₦200000.00'}
               </Text>
+              {!isVerified && (
+                <BlurView intensity={50} style={StyleSheet.absoluteFill} />
+              )}
             </View>
 
             <View style={styles.gridContainer}>
@@ -171,6 +188,7 @@ export default function Home() {
             </View>
           </View>
 
+          {!isVerified && 
           <TouchableOpacity style={styles.verificationContainer} onPress={handleVerificationPress}>
             <View style={styles.verificationTextContainer}>
               <Text style={styles.verificationText}>
@@ -181,6 +199,7 @@ export default function Home() {
             </View>
             <Image source={require("../../../assets/MappleApp/dummy.png")} style={styles.verificationImage} />
           </TouchableOpacity>
+          }
 
           {/* Recent Transactions Container */}
           <View style={styles.layout}>
@@ -208,11 +227,16 @@ export default function Home() {
                 </View>
                 <View style={styles.horizontalLine} />
               </React.Fragment>
-            ))}       
+            ))}            
+            {currentPage < totalPages && !showMore && (
+              <TouchableOpacity onPress={loadMoreTransactions}>
+                <Text style={styles.seeMoreText}>Load More</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </SafeAreaView>
       </ScrollView>
-
+      
       <BottomSheetModal
         isVisible={modalVisible}
         onClose={closeModal}

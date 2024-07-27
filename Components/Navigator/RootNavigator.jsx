@@ -77,6 +77,7 @@ import Device from '../Screens/ExternalTabs/Device';
 import Pin from '../Screens/ExternalTabs/Pin';
 import AccountVerification2 from '../Screens/ExternalTabs/AccountVerification2';
 import AccountVerification3 from '../Screens/ExternalTabs/AccountVerification3';
+import Reset5 from '../Screens/AccountSetUp/Reset5';
 
 
 
@@ -162,19 +163,6 @@ function HomeStackScreen() {
 
 const ProfileStack = createStackNavigator();
 
-function ProfileStackScreen() {
-  return (
-    <ProfileStack.Navigator>
-      <ProfileStack.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
-      <ProfileStack.Screen name="Verification" component={Verification} options={{ headerShown: false }} />
-      <ProfileStack.Screen name="ChangePassword" component={ChangePassword} options={{ headerShown: false }} />
-      <ProfileStack.Screen name="ReferFriend" component={ReferFriend} options={{ headerShown: false }} />
-      <ProfileStack.Screen name="Code" component={Code} options={{ headerShown: false }} />
-      <ProfileStack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }} />
-    </ProfileStack.Navigator>
-  );
-}
-
 export default function RootNavigator() {
   LogBox.ignoreLogs(['Non-serializable values were found in the navigation state']);
 const [activeToken , setActiveToken] = useState("")
@@ -241,7 +229,7 @@ getTokenFromSecureStore()
             // None Authenticated Screens
             <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="SignIn" options={{ headerShown: false }} >
+            <Stack.Screen name="SignIn" options={{ ...tabScreenOptions, headerTitle: "" }} >
               {()=><SignIn setIsUserLoggedIn={setIsUserLoggedIn}/>}
             </Stack.Screen>
             <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
@@ -255,10 +243,11 @@ getTokenFromSecureStore()
   
         
             {/* Reset pass screen */}
-            <Stack.Screen name="Reset" component={Reset} options={{ ...tabScreenOptions, headerTitle: "1 of 4" }} />
-            <Stack.Screen name="Reset2" component={Reset2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} />
-            <Stack.Screen name="Reset3" component={Reset3} options={{ ...tabScreenOptions, headerTitle: "3 of 4" }} />
-            <Stack.Screen name="Reset4" component={Reset4}  options={{ ...tabScreenOptions, headerTitle: "4 of 4" }} />
+            <Stack.Screen name="Reset" component={Reset} options={{ ...tabScreenOptions, headerTitle: "1 of 5" }} />
+            <Stack.Screen name="Reset2" component={Reset2} options={{ ...tabScreenOptions, headerTitle: "2 of 5" }} />
+            <Stack.Screen name="Reset3" component={Reset3} options={{ ...tabScreenOptions, headerTitle: "3 of 5" }} />
+            <Stack.Screen name="Reset5" component={Reset5} options={{ ...tabScreenOptions, headerTitle: "4 of 5" }} />
+            <Stack.Screen name="Reset4" component={Reset4}  options={{ ...tabScreenOptions, headerTitle: "5 of 5" }} />
   
             
             </>

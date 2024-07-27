@@ -18,6 +18,7 @@ export type RootStackParamList = {
   Reset2: undefined;
   Reset3: undefined;
   Reset4: undefined;
+  Reset5: undefined;
   Transactions: undefined;
   notification: undefined;
   Verification_01: undefined;

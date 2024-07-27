@@ -21,8 +21,14 @@ import CustomButton from '../Assecories/CustomButton';
 import AnimatedInput from '../Assecories/AnimatedInput';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
-const SignIn = ({setIsUserLoggedIn}) => {
+// Define the props interface
+interface SignInProps {
+  setIsUserLoggedIn: (value: boolean) => void;
+}
+
+const SignIn: React.FC<SignInProps> = ({ setIsUserLoggedIn }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
@@ -89,7 +95,9 @@ const SignIn = ({setIsUserLoggedIn}) => {
           await SecureStore.setItemAsync('email', data.data.mail.email);
           await SecureStore.setItemAsync('token', data.data.token);
           await SecureStore.setItemAsync('id', data.data._id);
+          await SecureStore.setItemAsync('accountVerif', data.data.isVerified.toString());
           console.log(data.data._id)
+          console.log(data.data.isVerified)
           setIsUserLoggedIn(true);
         navigation.navigate('Homepage');
       } else if (data.message === 'Verify your mail') {
@@ -183,11 +191,7 @@ const SignIn = ({setIsUserLoggedIn}) => {
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </ScrollView>
-            {loading && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color="#ff6a00" />
-              </View>
-            )}
+    {loading && <SpinnerOverlay />}
     </>
   );
 };
@@ -240,15 +244,7 @@ const styles = StyleSheet.create({
     color: 'grey',
     textAlign: 'center',
     marginBottom: 14,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: "100%",
-    height: "100%"
-  },
+  }
 });
 
 export default SignIn;

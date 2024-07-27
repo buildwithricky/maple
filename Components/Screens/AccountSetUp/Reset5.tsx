@@ -12,25 +12,24 @@ import {
   Keyboard,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
 import { useNavigation } from '@react-navigation/native';
 import AnimatedInput from '../Assecories/AnimatedInput';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { ScreenNavigationProp } from '../../../navigation';
+import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
-import SpinnerOverlay from '../Assecories/SpinnerOverlay';
+import { ScreenNavigationProp } from '../../../navigation';
+import { Ionicons } from '@expo/vector-icons';
 
-
-
-const Reset = () => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
+const Reset5 = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-
-  const navigation = useNavigation<ScreenNavigationProp<'Reset2'>>();
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const navigation = useNavigation<ScreenNavigationProp<'Reset4'>>();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -53,41 +52,60 @@ const Reset = () => {
     };
   }, []);
 
-  const handleRestPassword = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (password && confirmPassword && password === confirmPassword) {
+      setIsButtonDisabled(false);
+    } else {
+      setIsButtonDisabled(true);
+    }
+  }, [password, confirmPassword]);
+
+  const handleResetPassword = async () => {
+    if (!password || !confirmPassword) {
+      Alert.alert('Error', 'Both fields are required.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_URl}/user/forgot-password-token`, {
-        method: 'POST',
+      const token = await SecureStore.getItemAsync('resetPassToken');
+      if (!token) {
+        Alert.alert('Error', 'Token not found.');
+        return;
+      }
+
+      const response = await fetch(`${API_URl}/user/reset-password`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email
-        }),
+        body: JSON.stringify({ password, token }), // Include token in the body
       });
 
       const data = await response.json();
-      setLoading(false);
-      if (response.ok) {
-        navigation.navigate('Reset2');
+      console.log('Response data:', data);
+
+      if (data.success) {
+        navigation.navigate('Reset4');
       } else {
-        Alert.alert('Reset Password Failed', data.message || 'Unknown Error');
+        Alert.alert('Error', data.message || 'An error occurred.');
       }
     } catch (error) {
-      setLoading(false);
-      Alert.alert('Reset Password error', (error as Error).message);
+      console.error('Error resetting password:', error);
+      Alert.alert('Error', 'An error occurred. Please try again.');
     }
   };
 
   return (
-    <>
-      <ScrollView>
+    <ScrollView>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={keyboardOffset}
       >
-
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <SafeAreaView style={styles.loadingContainer}>
             <View style={styles.contentContainer}>
@@ -97,32 +115,47 @@ const Reset = () => {
               />
               <Text style={styles.title}>Reset Password</Text>
               <Text style={styles.subtitle}>
-              Forgot your password? No worries! Just enter your email address below, and we'll send you a link to reset it. 
+                To reset your password, please enter a new password. Make sure your new password is strong and secure.
               </Text>
             </View>
 
-            {/* Email Address Input */}
             <AnimatedInput
-                placeholder="Email Address"
-                value={email}
-                onChangeText={(text) => setEmail(text)}
-              />
-            
-            {/* Button */}
+              placeholder="Password"
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              secureTextEntry={!isPasswordVisible}
+              rightIcon={
+                <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
+                  <Ionicons name={isPasswordVisible ? 'eye-off' : 'eye'} size={20} color="gray" />
+                </TouchableOpacity>
+              }
+            />
+
+            <AnimatedInput
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={(text) => setConfirmPassword(text)}
+              secureTextEntry={!isConfirmPasswordVisible}
+              rightIcon={
+                <TouchableOpacity onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}>
+                  <Ionicons name={isConfirmPasswordVisible ? 'eye-off' : 'eye'} size={20} color="gray" />
+                </TouchableOpacity>
+              }
+            />
+
             <View style={styles.buttonContainer}>
               <CustomButton
                 width={"100%"}
                 gradientColors={['#ee0979', '#ff6a00']}
-                title="Continue"
-                onPress={handleRestPassword}
+                title="Confirm"
+                onPress={handleResetPassword}
+                disabled={isButtonDisabled}
               />
             </View>
           </SafeAreaView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
-      </ScrollView>
-      {loading && <SpinnerOverlay />}
-    </>
+    </ScrollView>
   );
 };
 
@@ -141,16 +174,17 @@ const styles = StyleSheet.create({
     marginTop: '5%',
     width: '100%',
   },
+  mainText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  linkText: {
+    fontWeight: 'bold',
+  },
   contentContainer: {
     alignItems: 'center',
     marginBottom: 20,
   },
-  backButton: {
-    position: 'absolute',
-    top: 40, 
-    left: 20,
-    zIndex: 1,
-  },  
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -169,7 +203,7 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: 'grey',
     textAlign: 'center',
     marginBottom: 14,
@@ -192,13 +226,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
   input: {
+    flex: 1,
     height: 35,
     fontSize: 16,
     marginTop: 8,
     textAlign: 'left',
-    width: '100%',
-  }
+  },
+  eyeIcon: {
+    padding: 5,
+  },
 });
 
-export default Reset;
+export default Reset5;

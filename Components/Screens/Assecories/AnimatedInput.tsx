@@ -15,17 +15,17 @@ interface AnimatedInputProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
-  secureTextEntry?: boolean;  // Added secureTextEntry here
+  secureTextEntry?: boolean;
+  rightIcon?: React.ReactNode; // Add rightIcon prop here
 }
 
-const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onChangeText, secureTextEntry }) => {
+const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onChangeText, secureTextEntry, rightIcon }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const animation = useSharedValue(0);
   const { width: SCREEN_WIDTH } = useWindowDimensions();
 
   useEffect(() => {
-    // Check if value is empty to determine if placeholder should show
     setShowPlaceholder(value === '');
   }, [value]);
 
@@ -39,7 +39,6 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onCha
       setIsFocused(false);
       animation.value = withTiming(0, { duration: 200 });
     }
-    // Always show placeholder on blur
     setShowPlaceholder(true);
   };
 
@@ -70,15 +69,18 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onCha
           {placeholder}
         </Animated.Text>
       </AnimatedPressable>
-      <AnimatedTextInput
-        style={[styles.input, { width: SCREEN_WIDTH - 40 }]}
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={focusInput}
-        onBlur={blurInput}
-        blurOnSubmit
-        secureTextEntry={secureTextEntry} // Passed secureTextEntry here
-      />
+      <View style={styles.inputContainer}>
+        <AnimatedTextInput
+          style={[styles.input, { width: SCREEN_WIDTH - 40 }]}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={focusInput}
+          onBlur={blurInput}
+          blurOnSubmit
+          secureTextEntry={secureTextEntry}
+        />
+        {rightIcon && <View style={styles.iconContainer}>{rightIcon}</View>}
+      </View>
     </View>
   );
 };
@@ -89,6 +91,10 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     paddingHorizontal: 20,
   },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   input: {
     height: 50,
     borderWidth: 1,
@@ -96,6 +102,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 10,
     fontSize: 16,
+    flex: 1,
   },
   placeholder: {
     position: 'absolute',
@@ -103,7 +110,11 @@ const styles = StyleSheet.create({
     top: 15,
     fontSize: 16,
     color: '#aaa',
-    opacity: 0, // Initially hidden
+    opacity: 0,
+  },
+  iconContainer: {
+    position: 'absolute',
+    right: 10,
   },
 });
 

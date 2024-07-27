@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Modal, Animated, TouchableWithoutFeedback } from 'react-native';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 import CustomButton from '../CustomButton';
@@ -7,9 +7,11 @@ interface Modal5Props {
   isVisible: boolean;
   onClose: () => void;
   onVerifyAccount: () => void;
+  loading: boolean;
+  error: string | null;
 }
 
-const Modal5: React.FC<Modal5Props> = ({ isVisible, onClose, onVerifyAccount }) => {
+const Modal5: React.FC<Modal5Props> = ({ isVisible, onClose, onVerifyAccount, loading, error }) => {
   const translateY = React.useRef(new Animated.Value(300)).current; 
 
   useEffect(() => {
@@ -65,12 +67,14 @@ const Modal5: React.FC<Modal5Props> = ({ isVisible, onClose, onVerifyAccount }) 
                   <Text style={styles.modalText}>
                     Please ensure that your account's KYC is verified in order to obtain a virtual account for receiving funds into your MaplePay wallet.
                   </Text>
+                  {error && <Text style={styles.errorText}>{error}</Text>}
                   <View style={styles.buttonContainer}>
                     <CustomButton
                       width={"100%"}
                       gradientColors={['#ee0979', '#ff6a00']}
                       title="Set Up Now"
                       onPress={onVerifyAccount}
+                      disabled={loading}
                     />
                   </View>
                 </Animated.View>
@@ -118,6 +122,13 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 12.5,
     color: 'grey',
+    textAlign: 'center',
+    marginTop: 10,
+    lineHeight: 20
+  },
+  errorText: {
+    fontSize: 12.5,
+    color: 'red',
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 20

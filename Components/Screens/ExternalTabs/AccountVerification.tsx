@@ -11,14 +11,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Modal5 from '../../../Components/Screens/Assecories/Modal/Modal5';
 import { ScreenNavigationProp } from '../../../navigation';
 import axios from 'axios';
-
-const API_URL = 'https://maplepay-server.onrender.com/api';
+import { API_URl } from '@env';
 
 const AccountVerification = () => {
   const navigation = useNavigation<ScreenNavigationProp<'AccountVerification2'>>();
   const [isModalVisible, setModalVisible] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleModalClose = () => {
     setModalVisible(false);
@@ -29,13 +28,17 @@ const AccountVerification = () => {
     setError(null);
     setModalVisible(false);
     try {
-      const response = await axios.post(`${API_URL}/verify-account`, {
+      const response = await axios.post(`${API_URl}/verify-account`, {
         // Add request body here if needed
       });
       console.log(response.data);
       navigation.navigate('AccountVerification2');
-    } catch (error) {
-      setError(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }

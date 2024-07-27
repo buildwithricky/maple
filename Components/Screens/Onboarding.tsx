@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions, SafeAreaView, Alert, Button } from 'react-native';
+import { View, Text, StyleSheet, Image, useWindowDimensions, SafeAreaView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import HomeTab from './Assecories/HomeTab';
 import data from '../../data/data';
 import Pagination from './Assecories/Pagination';
 import CustomButton from './Assecories/CustomButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenNavigationProp } from '../../navigation';
 
@@ -16,15 +15,12 @@ type DataItem = {
   text: string;
 };
 
-
-
 export default function Onboarding() {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const x = useSharedValue(0);
   const flatListRef = React.useRef<Animated.FlatList<DataItem>>(null);
 
   const navigation = useNavigation<ScreenNavigationProp<'SignUp' | 'SignIn'>>();
-
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: event => {
@@ -36,24 +32,23 @@ export default function Onboarding() {
     const right = interpolate(
       x.value,
       [0, SCREEN_WIDTH, 2 * SCREEN_WIDTH],
-      [20, SCREEN_WIDTH / 2, 20], // Adjust these values as per your design needs
+      [20, SCREEN_WIDTH / 2, 20],
       Extrapolate.CLAMP
     );
-  
+
     return {
       right,
     };
   });
-  
 
   const flyer2AnimatedStyle = useAnimatedStyle(() => {
     const right = interpolate(
       x.value,
       [0, SCREEN_WIDTH, 2 * SCREEN_WIDTH],
-      [30, -20, 30], // Adjust these values as per your design needs
+      [30, -20, 30],
       Extrapolate.CLAMP
     );
-  
+
     return {
       right,
     };
@@ -129,14 +124,13 @@ export default function Onboarding() {
       };
     });
 
-
     return (
       <View key={item.id} style={[styles.itemContainer, { width: SCREEN_WIDTH }]}>
         <Animated.Image
           source={item.image}
           style={imageAnimatedStyle}
         />
-        <Animated.View style={textAnimatedStyle}>
+        <Animated.View style={[textAnimatedStyle, {paddingHorizontal: 20}]}>
           <Text style={styles.itemTitle}>{item.title}</Text>
           <Text style={styles.itemText}>{item.text}</Text>
         </Animated.View>
@@ -162,41 +156,40 @@ export default function Onboarding() {
         bounces={false}
         pagingEnabled={true}
         showsHorizontalScrollIndicator={false}
+        scrollEnabled={false}  // Disable user swipe
       />
       <View style={styles.paginationWrapper}>
         <Pagination data={data} x={x} screenWidth={SCREEN_WIDTH} />
       </View>
       <View style={styles.buttonContainer}>
         <CustomButton
-          width={163}
+          width={169}
           gradientColors={['#ee0979', '#ff6a00']}
           title="Create Account"
-          onPress={() => navigation.navigate('SignUp')} 
+          onPress={() => navigation.navigate('SignUp')}
         />
         <CustomButton
-          width={163}
+          width={169}
           backgroundColor="#0E314C"
           title="Log In"
-          onPress={() => navigation.navigate('SignIn')} 
+          onPress={() => navigation.navigate('SignIn')}
         />
       </View>
     </SafeAreaView>
   );
 }
 
-
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     marginTop: '15%',
-    marginHorizontal: 10
+    marginHorizontal: 20
   },
   itemText: {
     color: '#494D55',
     textAlign: 'left',
     lineHeight: 20,
-    // marginHorizontal: 35,
     fontSize: 14,
   },
   buttonContainer: {
@@ -217,7 +210,6 @@ const styles = StyleSheet.create({
     fontWeight: 'semibold',
     textAlign: 'left',
     marginBottom: 10,
-    // marginHorizontal: 35,
   },
   paginationWrapper: {
     position: 'absolute',

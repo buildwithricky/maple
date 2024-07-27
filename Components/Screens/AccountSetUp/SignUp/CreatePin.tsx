@@ -14,6 +14,7 @@ import CustomButton from '../../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../../navigation';
 import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
+import SpinnerOverlay from '../../Assecories/SpinnerOverlay';
 
 const CreatePin = () => {
   const navigation = useNavigation<ScreenNavigationProp<'CreatePin3'>>();
@@ -125,6 +126,7 @@ const CreatePin = () => {
 
           <View style={styles.dialPadContainer}>
             <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+            {loading && <SpinnerOverlay />}
           </View>
         </View>
       </ScrollView>

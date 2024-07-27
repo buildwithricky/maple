@@ -17,6 +17,7 @@ import * as SecureStore from 'expo-secure-store';
 import CustomButton from '../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 const Change = () => {
   const navigation = useNavigation<ScreenNavigationProp<'settings'>>();
@@ -74,11 +75,7 @@ const Change = () => {
 
   return (
     <>
-      {loading && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#ff6a00" />
-        </View>
-      )}
+      {loading && <SpinnerOverlay />}
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.content}>
@@ -130,13 +127,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9f9f9',
     marginTop: 30,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 20,
   },
   container: {
     flexGrow: 1,

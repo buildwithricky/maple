@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard'; // Import Clipboard from expo-clipboard
 import * as SecureStore from 'expo-secure-store'; // Import SecureStore from expo-secure-store
 import { API_URl } from '@env'; // Importing API_URl from the .env file
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 interface UserData {
   firstName: string;
@@ -82,10 +83,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ff6a00" />
-        <Text>Loading...</Text>
-      </View>
+      <SpinnerOverlay />
     );
   }
 

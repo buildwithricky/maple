@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 type NotificationType = {
   id: string;
@@ -13,6 +14,7 @@ type NotificationType = {
 const Notification = () => {
   const [markAllRead, setMarkAllRead] = useState(false);
   const [notificationList, setNotificationList] = useState<NotificationType[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const getNotificationImage = (title: string) => {
     switch (title) {
@@ -61,6 +63,8 @@ const Notification = () => {
         }
       } catch (error) {
         console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -95,6 +99,7 @@ const Notification = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {loading && <SpinnerOverlay />}
       <ScrollView>
         <View style={styles.headerRow}>
           <Text style={styles.todayText}>TODAY</Text>

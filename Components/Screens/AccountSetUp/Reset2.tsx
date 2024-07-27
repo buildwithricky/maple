@@ -16,10 +16,15 @@ const Reset2 = () => {
   const navigation = useNavigation<ScreenNavigationProp<'Reset3'>>();
 
   // Function to open the default mail app
-  const openMailApp = () => {
-    Linking.openURL('message:')
-      .catch(err => console.error('An error occurred', err));
+  const openMailApp = async () => {
+    try {
+      await Linking.openURL('message:');
+      navigation.navigate('Reset3');
+    } catch (err) {
+      console.error('An error occurred', err);
+    }
   };
+  
 
   return (
     <ScrollView>
