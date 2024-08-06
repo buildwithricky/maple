@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../Assecories/CustomButton';
 import BottomSheetModal3 from '../Assecories/Modal/Modal3';
+import { useNavigation } from '@react-navigation/native';
+import { ScreenNavigationProp } from '../../../navigation';
 
-export default function Verification_01({ navigation }) {
+export default function Verification_01() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState('Document type');
-
+  const navigation = useNavigation<ScreenNavigationProp<'Verification_02'>>();
   const handleSelectDocument = (documentType: string) => {
     setSelectedDocument(documentType);
   };

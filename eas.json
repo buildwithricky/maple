@@ -10,7 +10,15 @@
     "preview": {
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env":{
+        "API_URl" : "https://maplepay-server.onrender.com/api"
+
+      }
+    }
   },
   "submit": {
     "production": {}

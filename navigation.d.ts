@@ -47,6 +47,7 @@ export type RootStackParamList = {
   Bene_1: undefined;
   Bene_2: undefined;
   New_1: undefined;
+  Verification_02: undefined;
   // Add other routes as needed
 };
 

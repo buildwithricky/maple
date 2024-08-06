@@ -46,9 +46,13 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "b3e04ccb-d5d7-4a16-addd-6944dbfe1048"
+        "projectId": "2663c2e4-4bf4-42c9-886f-d2ee0b6bc9a4"
       }
     },
-    "owner": "ufuoma123"
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF" 
+    }
   }
 }
