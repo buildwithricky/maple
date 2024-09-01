@@ -44,10 +44,25 @@ export type RootStackParamList = {
   AccountVerification3: undefined;
   Interac_1: undefined;
   Interac_2: undefined;
+  Interac_5: undefined;
   Bene_1: undefined;
   Bene_2: undefined;
+  Bene_3: undefined;
   New_1: undefined;
   Verification_02: undefined;
+  PhoneVerif2: undefined;
+  PhoneVerif: undefined;
+  BVNverif2: undefined;
+  BVNverif: undefined;
+  BVNverif3: undefined;
+  TransactionsList: undefined
+  wtwTransfer1: undefined
+  wtwTransfer2: undefined
+  wtwTransfer3: undefined
+  wtwTransfer4: undefined
+  twoFA: undefined
+  NotificationDes: { notification: NotificationType }
+  TransactionDetail: { transaction: TransactionType };
   // Add other routes as needed
 };
 

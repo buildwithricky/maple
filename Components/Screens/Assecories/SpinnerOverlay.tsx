@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
@@ -16,7 +16,7 @@ const CustomSpinner = () => {
       -1, // Repeat infinitely
       false // Don't reverse the animation
     );
-  }, []);
+  }, [rotation]);
 
   const animatedStyles = useAnimatedStyle(() => {
     return {
@@ -38,12 +38,27 @@ const CustomSpinner = () => {
 };
 
 const SpinnerOverlay = () => (
-  <BlurView intensity={20} style={styles.overlay}>
-    <CustomSpinner />
-  </BlurView>
+  <View style={styles.overlayContainer}>
+    {Platform.OS === 'ios' ? (
+      <BlurView intensity={20} style={styles.overlay}>
+        <CustomSpinner />
+      </BlurView>
+    ) : (
+      <View style={styles.overlay}>
+        <CustomSpinner />
+      </View>
+    )}
+  </View>
 );
 
 const styles = StyleSheet.create({
+  overlayContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: Platform.OS === 'android' ? 'rgba(255, 255, 255, 0.8)' : 'transparent',
+  },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',

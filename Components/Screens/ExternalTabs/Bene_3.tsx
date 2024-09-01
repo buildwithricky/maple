@@ -23,7 +23,7 @@ const Bene_3 = () => {
       <SuccessPage
         title="Transaction Complete"
         subtitle="Your transfer request was successful"
-        buttonText="Finish, Go Homepage"
+        buttonText="Back to homepage"
         buttonAction={() => navigation.navigate('Home')}
       />
     </>

@@ -2,32 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Animated, TouchableWithoutFeedback, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
 
-interface Beneficiary {
-  accountNumber?: string;
-  AccountName?: string;
-  bankName?: string;
-  email?: string;
-  tag?: string;
+interface Bank {
+    bankName?: string;
+    email?: string;
+    tag?: string;
+    id?: number;
+    code?: string;
 }
 
 interface BottomSheetModalProps {
-  isVisible: boolean;
-  onClose: () => void;
-  beneficiaries: Beneficiary[];
-  onSelectBeneficiary: (beneficiary: Beneficiary) => void;
-  isInterac: boolean;
+    isVisible: boolean;
+    onClose: () => void;
+    beneficiaries: Bank[];
+    onSelectBeneficiary: (beneficiary: Bank) => void;
+    isInterac: boolean;
 }
 
-const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose, beneficiaries, onSelectBeneficiary, isInterac }) => {
+const BottomSheetModal9: React.FC<BottomSheetModalProps> = ({ isVisible, onClose, beneficiaries, onSelectBeneficiary, isInterac }) => {
   const [searchText, setSearchText] = useState('');
-  const [filteredBeneficiaries, setFilteredBeneficiaries] = useState<Beneficiary[]>(beneficiaries);
+  const [filteredBeneficiaries, setFilteredBeneficiaries] = useState<Bank[]>(beneficiaries);
 
   useEffect(() => {
     setFilteredBeneficiaries(
       beneficiaries.filter((beneficiary) =>
         isInterac
           ? beneficiary.email?.toLowerCase().includes(searchText.toLowerCase())
-          : beneficiary.accountNumber?.includes(searchText)
+          : beneficiary.bankName?.toLowerCase().includes(searchText.toLowerCase())
       )
     );
   }, [searchText, beneficiaries, isInterac]);
@@ -81,10 +81,10 @@ const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
             <PanGestureHandler onGestureEvent={handleGesture} onHandlerStateChange={handleGestureStateChange}>
               <Animated.View style={[styles.modalContainer, { transform: [{ translateY }] }]}>
                 <View style={styles.handleBar} />
-                <Text style={styles.modalTitle}>Select Beneficiary</Text>
+                <Text style={styles.modalTitle}>Select Bank</Text>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Search Beneficiary"
+                  placeholder="Search Bank"
                   value={searchText}
                   onChangeText={setSearchText}
                 />
@@ -100,10 +100,7 @@ const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
                         }}
                       >
                         <Text style={styles.beneficiaryText}>
-                          {isInterac ? beneficiary.email : beneficiary.AccountName}
-                        </Text>
-                        <Text style={styles.beneficiarySubText}>
-                          {isInterac ? beneficiary.tag : beneficiary.accountNumber}
+                          {isInterac ? beneficiary.tag : beneficiary.bankName}
                         </Text>
                       </TouchableOpacity>
                     ))
@@ -168,6 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#555',
     fontWeight: '500',
+    fontStyle: "italic"
   },
   beneficiarySubText: {
     fontSize: 14,
@@ -182,4 +180,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BottomSheetModal8;
+export default BottomSheetModal9;

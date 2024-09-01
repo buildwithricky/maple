@@ -1,80 +1,157 @@
-import React from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image, KeyboardAvoidingView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, View, Text, StyleSheet, Image, KeyboardAvoidingView, Alert } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
+import * as SecureStore from 'expo-secure-store';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
+import { API_URl } from '@env';
+import { useNavigation } from '@react-navigation/native';
+import { ScreenNavigationProp } from '../../../navigation';
 
 export default function Bene_2() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<ScreenNavigationProp<'Bene_3'>>();
+
+  const [amount, setAmount] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchNames();
+  }, []);
+
+  const fetchNames = async () => {
+    try {
+      const storedAmount = await SecureStore.getItemAsync('ngnAmount');
+      const storedAccountName = await SecureStore.getItemAsync('accountName');
+      const storedBankName = await SecureStore.getItemAsync('bankName');
+      const storedAccountNumber = await SecureStore.getItemAsync('accountNumber');
+      if (storedAmount) setAmount(storedAmount);
+      if (storedAccountName) setAccountName(storedAccountName);
+      if (storedBankName) setBankName(storedBankName);
+      if (storedAccountNumber) setAccountNumber(storedAccountNumber);
+    } catch (error) {
+      console.error('Failed to fetch names from SecureStore', error);
+    }
+  };
+
+  const saveBeneficiary = async () => {
+    setLoading(true);
+    try {
+      // Validate accountName and accountNumber
+      if (!accountName || !accountNumber) {
+        setLoading(false);
+        Alert.alert('Error', 'Account Name or Account Number is missing.');
+        return;
+      }
+  
+      const bankId = await SecureStore.getItemAsync('bankId');
+      const bankCode = await SecureStore.getItemAsync('bankCode');
+      const MobileVerified = await SecureStore.getItemAsync('isMobileVerified');
+      const branches = await SecureStore.getItemAsync('branches');
+      const token = await SecureStore.getItemAsync('token');
+  
+      const beneficiaryData = {
+        accountNumber,
+        accountName,
+        type: "Bank",
+        bank: {
+          id: bankId,
+          code: bankCode,
+          name: bankName,
+          isMobileVerified: MobileVerified,
+          branches: branches
+        }
+      };
+  
+      const response = await fetch(`${API_URl}/beneficiary`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(beneficiaryData),
+      });
+  
+      const result = await response.json();
+      setLoading(false);
+  
+      if (response.ok) {
+        Alert.alert('Success', 'Beneficiary saved successfully');
+        // Navigate to the next screen or perform other actions
+      } else {
+        Alert.alert('Error', result.message || 'Failed to save beneficiary');
+      }
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Error saving beneficiary:', error);
+    }
+  };
+  
 
   return (
+    <>
     <SafeAreaView style={styles.loadingContainer}>
       <KeyboardAvoidingView>
-      <View style={styles.imageWrapper}>
-        <Image
-          source={require('../../../assets/MappleApp/transfer_icon.png')} // Change the path as needed
-          style={styles.image}
-        />
-      </View>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={require('../../../assets/MappleApp/transfer_icon.png')} // Change the path as needed
+            style={styles.image}
+          />
+        </View>
 
-      <View style={styles.summaryContainer}>
-        <View style={styles.row}>
-          <Text style={styles.labelText}>Currency</Text>
-          <Text style={styles.valueText}>CAD</Text>
+        <View style={styles.summaryContainer}>
+          <View style={styles.row}>
+            <Text style={styles.labelText}>Amount</Text>
+            <Text style={[styles.valueText, { fontSize: 22 }]}>₦{amount}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.labelText}>Account Name</Text>
+            <Text style={styles.valueText}>{accountName}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.labelText}>Bank Name</Text>
+            <Text style={styles.valueText}>{bankName}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.labelText}>Account Number</Text>
+            <Text style={styles.valueText}>{accountNumber}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.labelText}>Transaction Fee</Text>
+            <Text style={styles.valueText}>$0.00</Text>
+          </View>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.labelText}>Amount</Text>
-          <Text style={styles.valueText}>$10,000</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.labelText}>Transaction Fee</Text>
-          <Text style={styles.valueText}>$0.00</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.labelText}>Beneficiary</Text>
-          <Text style={styles.valueText}>$ibekwe</Text>
-        </View>
-      </View>
 
-      <View style={styles.buttonContainer}>
-        <CustomButton
-          width={"100%"}
-          gradientColors={['#ee0979', '#ff6a00']}
-          title="Send"
-          onPress={() => navigation.navigate('Bene_3')}
-        />
-      </View>
+        <View style={styles.buttonContainer}>
+          <CustomButton
+            width={"70%"}
+            gradientColors={['#ee0979', '#ff6a00']}
+            title="Send"
+            onPress={() => navigation.navigate('Bene_3')}
+          />
+        </View>
+        <View style={styles.buttonContainer}>
+          <CustomButton
+            width={"70%"}
+            gradientColors={['#ee0979', '#ff6a00']}
+            title="Save As Beneficiary"
+            onPress={saveBeneficiary}
+          />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    {loading && <SpinnerOverlay />}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    marginTop: '8%',
+    marginTop: '10%',
     marginHorizontal: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  goBackButton: {
-    position: 'absolute',
-    left: 0,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  line: {
-    height: 1,
-    backgroundColor: '#00000032',
-    marginBottom: 20,
   },
   imageWrapper: {
     alignItems: 'center',
@@ -87,9 +164,9 @@ const styles = StyleSheet.create({
     height: 100,
   },
   summaryContainer: {
-    backgroundColor: '#d1d1d157',
+    backgroundColor: '#FAFAF9',
     borderRadius: 15,
-    padding: 10,
+    padding: 15,
     marginBottom: 20,
     paddingTop: 25,
     borderWidth: 1,
@@ -100,13 +177,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginVertical: 15,
   },
   labelText: {
     color: '#0E314C',
+    fontSize: 14,
+    fontWeight: 'regular',
   },
   valueText: {
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: 'regular',
     color: '#0E314C',
   },
   buttonContainer: {
@@ -114,6 +194,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
     justifyContent: 'center',
-    marginBottom: 13,
+    marginBottom: 5,
   },
 });

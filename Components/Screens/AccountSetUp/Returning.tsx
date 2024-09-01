@@ -37,9 +37,45 @@ const Returning = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pinError, setPinError] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null); 
 
   const route = useRoute<ReturningScreenRouteProp>();
   const { pinLoggedIn, setPinLoggedIn } = route.params;
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        if (!token) {
+          throw new Error('No token found');
+        }
+
+        const response = await fetch(`${API_URl}/user/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setProfileImage(data.data.profileImage || null);
+          setFirstName(data.data.firstName);
+          setLastName(data.data.lastName);
+        } else {
+          console.error('Failed to fetch user data', data.message);
+        }
+      } catch (err) {
+        console.error('An error occurred', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
@@ -141,7 +177,7 @@ const Returning = () => {
         <View style={styles.loadingContainer}>
           <View style={styles.contentContainer}>
             <Image
-              source={require('../../../assets/MappleApp/icon_img.png')}
+              source={profileImage ? { uri: profileImage } : require('../../../assets/MappleApp/user.png')}
               style={styles.image}
             />
             <Text style={styles.title}>
@@ -259,6 +295,7 @@ const styles = StyleSheet.create({
     height: 80,
     marginTop: 10,
     marginBottom: 30,
+    borderRadius: 40, // Make image circular
   },
   errorText: {
     color: 'red',

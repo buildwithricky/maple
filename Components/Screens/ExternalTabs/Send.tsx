@@ -1,6 +1,5 @@
 import React from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenNavigationProp } from '../../../navigation';
 
@@ -10,19 +9,26 @@ const options = [
     title: 'Send CAD Through Interac Email',
     description: 'Easily send CAD to anyone with an interac email',
     image: require('../../../assets/MappleApp/send_Icon_1.png'),
-    page: 'Interac_1', // Replace with the actual page name
+    page: 'Interac_1' as const,
   },
   {
     id: 2,
     title: 'Send Naira to beneficiary Account',
     description: 'You can easily transfer funds to beneficiaries',
     image: require('../../../assets/MappleApp/send_icon_2.png'),
-    page: 'Bene_1', // Replace with the actual page name
+    page: 'Bene_1' as const,
+  },
+  {
+    id: 3,
+    title: 'Maple Email',
+    description: 'You can easily transfer funds to Users with maple wallet that is Wallet to Wallet transfer',
+    image: require('../../../assets/MappleApp/send_icon_2.png'),
+    page: 'wtwTransfer1' as const,
   }
 ];
 
 export default function Send() {
-  const navigation = useNavigation<ScreenNavigationProp<'Interac_1' | 'Bene_1' | 'New_1'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Interac_1' | 'Bene_1' | 'wtwTransfer1'>>();
 
   return (
     <SafeAreaView style={styles.loadingContainer}>

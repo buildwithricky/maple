@@ -11,26 +11,20 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import DialPad from '../AccountSetUp/SignUp/DialPad';
 import CustomButton from '../../Screens/Assecories/CustomButton';
-import { ScreenNavigationProp } from '../../../../navigation';
+import { ScreenNavigationProp } from '../../../navigation';
 
 const correctCode = ['1', '2', '3', '4']; // Example correct code
 
 const Interac_4 = () => {
-  const navigation = useNavigation<ScreenNavigationProp<'CreatePin3'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Interac_5'>>();
   const [code, setCode] = useState(['', '', '', '']);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [isCodeCorrect, setIsCodeCorrect] = useState(false);
-
-  const handleResendCode = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 3000);
-  };
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
@@ -67,6 +61,27 @@ const Interac_4 = () => {
       if (firstEmptyIndex !== -1) {
         handleInputChange(firstEmptyIndex, value);
       }
+    }
+  };
+
+  const handleFingerprintLogin = async () => {
+    const hasHardware = await LocalAuthentication.hasHardwareAsync();
+    if (!hasHardware) {
+      alert('This device does not have a fingerprint scanner.');
+      return;
+    }
+
+    const biometricRecords = await LocalAuthentication.isEnrolledAsync();
+    if (!biometricRecords) {
+      alert('No fingerprints are registered. Please register a fingerprint.');
+      return;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync();
+    if (result.success) {
+      navigation.navigate('Homepage');
+    } else {
+      alert('Fingerprint authentication failed. Please try again.');
     }
   };
 
@@ -111,7 +126,7 @@ const Interac_4 = () => {
           </View>
 
           <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+            <DialPad onPress={handleDialPadPress} fingerprintPress={handleFingerprintLogin} />
           </View>
         </View>
       </ScrollView>

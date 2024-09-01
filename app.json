@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mapple",
+    "name": "Maple",
     "slug": "mapple",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,11 +11,16 @@
       "bundleIdentifier": "com.yourcompany.mapple",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to send you notifications based on your location.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location to send you notifications based on your location.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to send you notifications based on your location."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/MappleIcon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.yourcompany.mapple",
@@ -42,7 +47,9 @@
     "scheme": "mapple",
     "plugins": [
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
@@ -50,9 +57,9 @@
       }
     },
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF" 
+      "image": "./assets/mapple.jpg",
+      "resizeMode": "cover",
+      "backgroundColor": "#FFFFFF"
     }
   }
 }

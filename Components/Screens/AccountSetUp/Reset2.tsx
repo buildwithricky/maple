@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   Linking,
+  Platform,
 } from 'react-native';
 import CustomButton from '../Assecories/CustomButton';
 import { useNavigation } from '@react-navigation/native';
@@ -18,10 +19,25 @@ const Reset2 = () => {
   // Function to open the default mail app
   const openMailApp = async () => {
     try {
-      await Linking.openURL('message:');
-      navigation.navigate('Reset3');
+      let url = '';
+      if (Platform.OS === 'ios') {
+        url = 'message:';
+      } else if (Platform.OS === 'android') {
+        url = 'mailto:';
+      }
+  
+      const canOpen = await Linking.canOpenURL(url);
+      
+      if (canOpen) {
+        await Linking.openURL(url);
+        navigation.navigate('Reset3');
+      } else {
+        console.log('No email app available');
+        // You might want to show an alert to the user here
+      }
     } catch (err) {
       console.error('An error occurred', err);
+      // You might want to show an error message to the user here
     }
   };
   

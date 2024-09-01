@@ -1,16 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, useWindowDimensions, SafeAreaView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedScrollHandler, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import HomeTab from './Assecories/HomeTab';
 import data from '../../data/data';
-import Pagination from './Assecories/Pagination';
 import CustomButton from './Assecories/CustomButton';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenNavigationProp } from '../../navigation';
 
 type DataItem = {
   id: number;
-  image: any; // Adjust the type based on your actual image type
+  image: any;
   title: string;
   text: string;
 };
@@ -18,7 +17,8 @@ type DataItem = {
 export default function Onboarding() {
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   const x = useSharedValue(0);
-  const flatListRef = React.useRef<Animated.FlatList<DataItem>>(null);
+  const flatListRef = useRef<Animated.FlatList<DataItem>>(null);
+  const scrollIndex = useRef(0);
 
   const navigation = useNavigation<ScreenNavigationProp<'SignUp' | 'SignIn'>>();
 
@@ -57,15 +57,16 @@ export default function Onboarding() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (flatListRef.current) {
-        flatListRef.current.scrollToOffset({
-          offset: (x.value + SCREEN_WIDTH) % (SCREEN_WIDTH * data.length),
+        scrollIndex.current = (scrollIndex.current + 1) % data.length;
+        flatListRef.current.scrollToIndex({
+          index: scrollIndex.current,
           animated: true,
         });
       }
-    }, 2000);
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [SCREEN_WIDTH, x.value]);
+  }, []);
 
   const RenderItem: React.FC<{ item: DataItem; index: number }> = ({ item, index }) => {
     const imageAnimatedStyle = useAnimatedStyle(() => {
@@ -125,12 +126,12 @@ export default function Onboarding() {
     });
 
     return (
-      <View key={item.id} style={[styles.itemContainer, { width: SCREEN_WIDTH }]}>
+      <View style={[styles.itemContainer, { width: SCREEN_WIDTH }]}>
         <Animated.Image
           source={item.image}
           style={imageAnimatedStyle}
         />
-        <Animated.View style={[textAnimatedStyle, {paddingHorizontal: 20}]}>
+        <Animated.View style={[textAnimatedStyle, {paddingHorizontal: 0}]}>
           <Text style={styles.itemTitle}>{item.title}</Text>
           <Text style={styles.itemText}>{item.text}</Text>
         </Animated.View>
@@ -156,11 +157,8 @@ export default function Onboarding() {
         bounces={false}
         pagingEnabled={true}
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}  // Disable user swipe
+        scrollEnabled={false}
       />
-      <View style={styles.paginationWrapper}>
-        <Pagination data={data} x={x} screenWidth={SCREEN_WIDTH} />
-      </View>
       <View style={styles.buttonContainer}>
         <CustomButton
           width={169}
@@ -184,29 +182,31 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     marginTop: '15%',
-    marginHorizontal: 20
+    marginHorizontal: 25
   },
   itemText: {
     color: '#494D55',
     textAlign: 'left',
     lineHeight: 20,
     fontSize: 14,
+    width: "auto"
   },
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    // marginTop: 10,
     gap: 20,
     marginBottom: '15%',
+    marginHorizontal: 25
   },
   itemContainer: {
     flex: 1,
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    justifyContent: "space-evenly",
+    // alignItems: 'center',
   },
   itemTitle: {
     color: 'black',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'semibold',
     textAlign: 'left',
     marginBottom: 10,

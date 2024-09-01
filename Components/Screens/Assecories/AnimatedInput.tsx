@@ -17,9 +17,10 @@ interface AnimatedInputProps {
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
   rightIcon?: React.ReactNode; // Add rightIcon prop here
+  editable?: boolean; // Optional editable prop
 }
 
-const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onChangeText, secureTextEntry, rightIcon }) => {
+const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onChangeText, secureTextEntry, rightIcon, editable = true }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const animation = useSharedValue(0);
@@ -78,6 +79,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({ placeholder, value, onCha
           onBlur={blurInput}
           blurOnSubmit
           secureTextEntry={secureTextEntry}
+          editable={editable} // Pass the editable prop here
         />
         {rightIcon && <View style={styles.iconContainer}>{rightIcon}</View>}
       </View>

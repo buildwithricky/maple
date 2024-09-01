@@ -78,6 +78,19 @@ import Pin from '../Screens/ExternalTabs/Pin';
 import AccountVerification2 from '../Screens/ExternalTabs/AccountVerification2';
 import AccountVerification3 from '../Screens/ExternalTabs/AccountVerification3';
 import Reset5 from '../Screens/AccountSetUp/Reset5';
+import PhoneVerif from '../Screens/AccountSetUp/SignUp/PhoneVerif';
+import PhoneVerif2 from '../Screens/AccountSetUp/SignUp/PhoneVerif2';
+import BVNverif from '../Screens/AccountSetUp/SignUp/BVNverif';
+import BVNverif2 from '../Screens/AccountSetUp/SignUp/BVNverif2';
+import BVNverif3 from '../Screens/AccountSetUp/SignUp/BVNverif3';
+import TransactionPage from '../Screens/tabScreens/Transaction/TransactionsPage';
+import TransactionDetails from '../Screens/tabScreens/Transaction/TransactionDetails';
+import Transfer1 from '../Screens/ExternalTabs/WTWtransfer/transfer1';
+import transfer2 from '../Screens/ExternalTabs/WTWtransfer/transfer2';
+import transfer3 from '../Screens/ExternalTabs/WTWtransfer/transfer3';
+import transfer4 from '../Screens/ExternalTabs/WTWtransfer/transfer4';
+import TwoFA from '../Screens/AccountSetUp/SignUp/2FA';
+import NotificationDes from '../Screens/tabScreens/NotificationDes';
 
 
 
@@ -132,7 +145,8 @@ function HomeTabs({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) {
             backgroundColor: 'white',
             borderTopWidth: 0,
             borderRadius: 105,
-            elevation: 5,
+            elevation: 3,
+            height: 80
           },
           tabBarItemStyle: {
             marginTop: ios ? 20 : 0,
@@ -232,12 +246,20 @@ getTokenFromSecureStore()
             <Stack.Screen name="SignIn" options={{ ...tabScreenOptions, headerTitle: "" }} >
               {()=><SignIn setIsUserLoggedIn={setIsUserLoggedIn}/>}
             </Stack.Screen>
+            <Stack.Screen name="twoFA" options={{ ...tabScreenOptions, headerTitle: "Two Factor Authentication" }} >
+              {()=><TwoFA setIsUserLoggedIn={setIsUserLoggedIn}/>}
+            </Stack.Screen>
             <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
   
             {/* Email Verification screens */}
             <Stack.Screen name="EmailVerif" component={EmailVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
             <Stack.Screen name="EmailVerif2" component={EmailVerif2} options={{ headerShown: false }} />
             <Stack.Screen name="EmailVerif3" component={EmailVerif3} options={{ headerShown: false }} />
+            <Stack.Screen name="PhoneVerif" component={PhoneVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
+            <Stack.Screen name="PhoneVerif2" component={PhoneVerif2} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
+            <Stack.Screen name="BVNverif" component={BVNverif} options={{ ...tabScreenOptions, headerTitle: "1 of 3" }} />
+            <Stack.Screen name="BVNverif2" component={BVNverif2} options={{ ...tabScreenOptions, headerTitle: "3 of 3" }} />
+            <Stack.Screen name="BVNverif3" component={BVNverif3} options={{ ...tabScreenOptions, headerTitle: "2 of 3" }} />
             <Stack.Screen name="CreatePin" component={CreatePin} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
             <Stack.Screen name="CreatePin3" component={CreatePin3} options={{ headerShown: false }} />
   
@@ -269,6 +291,9 @@ getTokenFromSecureStore()
           <Stack.Screen name="Verification_05" component={Verification_05} options={{headerShown: false}} />
           {/* Transaction screen */}
           <Stack.Screen name="Transactions" component={Transactions} options={{headerShown: false}} />
+          <Stack.Screen name="TransactionsList" component={TransactionPage} options={{ ...tabScreenOptions, headerTitle: "Transactions" }} />
+          <Stack.Screen name="TransactionDetail" component={TransactionDetails} options={{ ...tabScreenOptions, headerTitle: "Transaction Details" }} />
+          <Stack.Screen name="NotificationDes" component={NotificationDes} options={{ ...tabScreenOptions, headerTitle: "Notification Details" }} />
           <Stack.Screen name="Add" component={Add} options={{headerShown: false}} />
           <Stack.Screen name="Send" component={Send} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Swap" component={Swap} options={{headerShown: false}} />
@@ -280,6 +305,10 @@ getTokenFromSecureStore()
           <Stack.Screen name="Bene_1" component={Bene_1} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Bene_2" component={Bene_2} options={{ ...tabScreenOptions, headerTitle: "Transfer Summary" }} />
           <Stack.Screen name="Bene_3" component={Bene_3} options={{headerShown: false}} />
+          <Stack.Screen name="wtwTransfer1" component={Transfer1} options={{ ...tabScreenOptions, headerTitle: "1 of 3" }} />
+          {/* <Stack.Screen name="wtwTransfer2" component={transfer2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} /> */}
+          <Stack.Screen name="wtwTransfer3" component={transfer3} options={{ ...tabScreenOptions, headerTitle: "2 of 3" }} />
+          <Stack.Screen name="wtwTransfer4" component={transfer4} options={{ ...tabScreenOptions, headerTitle: "3 of 3" }} />
           <Stack.Screen name="New_1" component={New_1} options={{headerShown: false}} />
           <Stack.Screen name="New_2" component={New_2} options={{headerShown: false}} />
           <Stack.Screen name="New_3" component={New_3} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />

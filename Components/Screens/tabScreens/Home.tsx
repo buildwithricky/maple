@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import CustomButton2 from '../Assecories/CustomButton2';
@@ -11,82 +11,230 @@ import CustomButton from '../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
 import { BlurView } from 'expo-blur';
+import * as Notifications from 'expo-notifications';
 
-type ValidScreen = 'Home' | 'Transactions' | 'notification' | 'Verification_01' | 'Send' | 'Swap';
+type ValidScreen = 'Home' | 'Transactions' | 'notification' | 'Verification_01' | 'Send' | 'Swap' | 'TransactionsList';
 
 type TransactionType = {
-  id: string;
+  _id: string;
   type: string;
-  currency: string;
-  amount: string;
-  date: string;
+  sourceCurrency: string;
+  sourceAmount: string;
+  createdAt: string;
+};
+type UserData = {
+  profileImage?: string;
 };
 
 export default function Home() {
   const navigation = useNavigation<ScreenNavigationProp<ValidScreen>>();
   const [modalVisible, setModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
-  const [showMore, setShowMore] = useState(false); // State for showing more transactions
-  const [currency, setCurrency] = useState('CAD'); // State for currency
+  const [showMore, setShowMore] = useState(false); 
+  const [currency, setCurrency] = useState('CAD');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [transactions, setTransactions] = useState<TransactionType[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [isVerified, setIsVerified] = useState(false);
+  const [nairaBalance, setNairaBalance] = useState('₦0.00');
+  const [refreshing, setRefreshing] = useState(false);
+  const [prevBalance, setPrevBalance] = useState('₦0.00');
+  const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const fetchNames = async () => {
-      try {
-        const storedFirstName = await SecureStore.getItemAsync('firstName');
-        const storedLastName = await SecureStore.getItemAsync('lastName');
-        if (storedFirstName) setFirstName(storedFirstName);
-        if (storedLastName) setLastName(storedLastName);
-      } catch (error) {
-        console.error('Failed to fetch names from SecureStore', error);
-      }
-    };
-
-    const fetchTransactions = async () => {
+    requestNotificationPermission();
+    fetchAllData();
+    const intervalId = setInterval(fetchTransactions, 10000); // Poll every 10 seconds
+  
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [currentPage]);
+  
+  useEffect(() => {
+    const fetchBalanceAndUpdate = async () => {
       try {
         const token = await SecureStore.getItemAsync('token');
-        const response = await fetch(`${API_URl}/transaction/user?page=${currentPage}`, {
+        const response = await fetch(`${API_URl}/wallet/balance/ngn`, {
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         const result = await response.json();
         if (result.success) {
-          setTransactions(result.data.data);
-          setTotalPages(result.data.totalPages);
+          const newBalance = `₦${result.data.walletBalance}`;
+          if (newBalance !== prevBalance) {
+            setPrevBalance(newBalance);
+            setNairaBalance(newBalance);
+          }
         } else {
-          console.error('Error fetching transactions:', result.message);
+          console.error('Error fetching wallet balance:', result.message);
         }
       } catch (error) {
-        console.error('Error fetching transactions:', error);
+        console.error('Error fetching wallet balance:', error);
       }
     };
+  
+    const intervalId = setInterval(fetchBalanceAndUpdate, 10000); // Poll every 10 seconds
+  
+    return () => clearInterval(intervalId); // Cleanup on unmount
+  }, [prevBalance]);
 
-    const checkVerificationStatus = async () => {
+  const requestNotificationPermission = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') {
+      alert('You need to enable notifications in your settings.');
+    }
+  };
+  
+  const fetchAllData = async () => {
+    await fetchNames();
+    await fetchTransactions();
+    await checkVerificationStatus();
+    await fetchNairaBalance();
+  };
+
+  const fetchNames = async () => {
+    try {
+      const storedFirstName = await SecureStore.getItemAsync('firstName');
+      const storedLastName = await SecureStore.getItemAsync('lastName');
+      if (storedFirstName) setFirstName(storedFirstName);
+      if (storedLastName) setLastName(storedLastName);
+    } catch (error) {
+      console.error('Failed to fetch names from SecureStore', error);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const response = await fetch(`${API_URl}/mobile-transaction/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = await response.json();
+      if (result.success) {
+        const newTransactions = result.data.data.map((transaction: TransactionType) => ({
+          ...transaction,
+          createdAt: new Date(transaction.createdAt).toISOString(), // Change to ISO string for accurate comparison
+        }));
+        if (JSON.stringify(transactions) !== JSON.stringify(newTransactions)) {
+          handleNewTransactions(newTransactions);
+          setTransactions(newTransactions);
+        }
+      } else {
+        console.error('Error fetching transactions:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+  
+  const handleNewTransactions = (newTransactions: TransactionType[]) => {
+    newTransactions.forEach(transaction => {
+      const createdAt = new Date(transaction.createdAt).getTime();
+      const now = Date.now();
+      if (now - createdAt <= 10000) { // 1 minute
+        sendNotification(transaction);
+      }
+    });
+  };
+  
+  const sendNotification = async (transaction: TransactionType) => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "New Transaction Alert",
+        body: `You have a new transaction: ${transaction.type} of ${transaction.sourceAmount} ${transaction.sourceCurrency}`,
+      },
+      trigger: null,
+    });
+  };
+  
+  const checkVerificationStatus = async () => {
+    try {
+      const isVerified = await SecureStore.getItemAsync('accountVerif');
+      if (isVerified) {
+        setIsVerified(isVerified === 'false');
+      }
+    } catch (error) {
+      console.error('Failed to fetch verification status from SecureStore', error);
+    }
+  };
+
+  const fetchNairaBalance = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const response = await fetch(`${API_URl}/wallet/balance/ngn`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = await response.json();
+      if (result.success) {
+        const newBalance = `₦${result.data.walletBalance}`;
+        setNairaBalance(newBalance);
+        setPrevBalance(newBalance);
+        await SecureStore.setItemAsync('walletBalance', newBalance);
+      } else {
+        console.error('Error fetching wallet balance:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+    }
+  };  
+
+  useEffect(() => {
+    const fetchUserData = async () => {
       try {
-        const isVerified = await SecureStore.getItemAsync('accountVerif');
-        if (isVerified) {
-          setIsVerified(isVerified === 'true');
+        const token = await SecureStore.getItemAsync('token');
+        if (!token) {
+          throw new Error('No token found');
         }
-      } catch (error) {
-        console.error('Failed to fetch verification status from SecureStore', error);
+
+        const response = await fetch(`${API_URl}/user/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setUserData(data.data);
+          setImage(data.data.profileImage || null);
+        } else {
+          setError(data.message || 'Failed to fetch user data');
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message || 'An error occurred');
+        } else {
+          setError('An unknown error occurred');
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchNames();
-    fetchTransactions();
-    checkVerificationStatus();
-  }, [currentPage]);
+    fetchUserData();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
+  };
 
   const loadMoreTransactions = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    navigation.navigate('TransactionsList')
   };
 
   const handleNotificationPress = () => {
@@ -124,12 +272,12 @@ export default function Home() {
     switch (type) {
       case 'Fund Swap':
         return require("../../../assets/MappleApp/Icon_1.png");
-      case 'Incoming Transaction':
+      case 'Incoming':
         return require("../../../assets/MappleApp/Icon_2.png");
-      case 'Outgoing Transaction':
+      case 'Outgoing':
         return require("../../../assets/MappleApp/Icon_3.png");
       default:
-        return require("../../../assets/MappleApp/Icon_3.png"); // Default icon if type doesn't match
+        return require("../../../assets/MappleApp/Icon_3.png");
     }
   };
 
@@ -137,20 +285,37 @@ export default function Home() {
     { screen: 'Home', source: require("../../../assets/MappleApp/Account.png"), text: 'Account' },
     { screen: '', source: require("../../../assets/MappleApp/Add.png"), text: 'Add', onPress: handleAddPress },
     { screen: 'Send', source: require("../../../assets/MappleApp/send.png"), text: 'Send' },
-    { screen: 'Swap', source: require("../../../assets/MappleApp/swap.png"), text: 'Add Fund' },
+    // { screen: 'Swap', source: require("../../../assets/MappleApp/swap.png"), text: 'Add Fund' },
   ];
 
   const displayedTransactions = showMore ? transactions : transactions.slice(0, 4);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1; // Months are 0-based
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    return `${day}/${month} ${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+  };
+
+
   return (
     <>
-      <ScrollView scrollIndicatorInsets={{ top: 0, left: 0, bottom: 0, right: 0 }}>
+      <ScrollView
+        scrollIndicatorInsets={{ top: 0, left: 0, bottom: 0, right: 0 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <SafeAreaView style={styles.loadingContainer}>
           <View style={styles.headerRow}>
-            <Image 
-              source={require("../../../assets/MappleApp/user.png")}
-              style={styles.profileImage} 
-            />
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+              <Image 
+                source={{ uri: image || userData?.profileImage || '../../../assets/MappleApp/user.png' }} 
+                style={styles.profileImage} 
+              />
+            </TouchableOpacity>
             <View style={styles.greetingContainer}>
               <Text style={styles.helloText}>Hello,</Text>
               <Text style={styles.nameText}>{lastName} {firstName}</Text>
@@ -167,7 +332,7 @@ export default function Home() {
             <View style={styles.walletInnerContainer}>
               <Text style={styles.walletBalanceText}>Wallet Balance</Text>
               <Text style={styles.walletAmountText}>
-                {currency === 'CAD' ? '$1000.00' : '₦200000.00'}
+                {currency === 'CAD' ? '$1000.00' : nairaBalance}
               </Text>
               {!isVerified && (
                 <BlurView intensity={50} style={StyleSheet.absoluteFill} />
@@ -205,35 +370,51 @@ export default function Home() {
           <View style={styles.layout}>
             <View style={styles.recentTransactionsHeader}>
               <Text style={styles.recentTransactionsHeaderText}>Recent Transactions</Text>
-              <TouchableOpacity onPress={() => setShowMore(!showMore)}>
+              {/* <TouchableOpacity onPress={() => setShowMore(!showMore)}>
                 <Text style={styles.seeMoreText}>{showMore ? "Show Less" : "See More"}</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             <View style={styles.horizontalLine} />
 
             {/* Transactions */}
             {displayedTransactions.map((transaction) => (
-              <React.Fragment key={transaction.id}>
+              <TouchableOpacity 
+                key={transaction._id}  // Unique key for each transaction
+                onPress={() => navigation.navigate('TransactionDetail', { transaction })}
+                style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomColor: "#f0f0f0", borderBottomWidth: 1 }}
+              >
                 <View style={styles.transactionRow}>
                   <Image source={getTransactionIcon(transaction.type)} style={styles.transactionImage} />
                   <View style={styles.transactionDetailsContainer}>
                     <Text style={styles.transactionTypeText}>{transaction.type}</Text>
-                    <Text style={styles.transactionCurrencyText}>{transaction.currency}</Text>
+                    <Text style={styles.transactionCurrencyText}>{transaction.sourceCurrency}</Text>
                   </View>
                   <View style={styles.transactionAmountContainer}>
-                    <Text style={styles.transactionAmountText}>{transaction.amount}</Text>
-                    <Text style={styles.transactionDateText}>{transaction.date}</Text>
+                    <Text style={styles.transactionAmountText}>{transaction.sourceAmount}</Text>
+                    <Text style={styles.transactionDateText}>{formatDate(transaction.createdAt)}</Text>
                   </View>
                 </View>
                 <View style={styles.horizontalLine} />
-              </React.Fragment>
-            ))}            
-            {currentPage < totalPages && !showMore && (
-              <TouchableOpacity onPress={loadMoreTransactions}>
-                <Text style={styles.seeMoreText}>Load More</Text>
               </TouchableOpacity>
-            )}
+            ))}
           </View>
+
+            <TouchableOpacity
+              onPress={loadMoreTransactions}
+              style={{
+                backgroundColor: '#fff',
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderRadius: 5,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginVertical: 20,
+                marginHorizontal: 15, // Adjust as needed
+              }}
+            >
+              <Text style={{ color: 'red', fontSize: 16 }}>Load More</Text>
+            </TouchableOpacity>
+
         </SafeAreaView>
       </ScrollView>
       
@@ -446,6 +627,7 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 15,
     fontWeight: '300',
+    textAlign: "center"
   },
   horizontalLine: {
     height: 1,

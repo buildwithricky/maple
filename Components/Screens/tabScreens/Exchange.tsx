@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -77,7 +77,7 @@ export default function Exchange() {
 
   return (
     <SafeAreaView style={styles.loadingContainer}>
-      <ScrollView>
+      <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <KeyboardAvoidingView style={styles.container} behavior="padding">
 
           {/* First container */}

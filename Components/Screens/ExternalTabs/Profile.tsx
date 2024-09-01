@@ -8,14 +8,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard'; // Import Clipboard from expo-clipboard
-import * as SecureStore from 'expo-secure-store'; // Import SecureStore from expo-secure-store
-import { API_URl } from '@env'; // Importing API_URl from the .env file
+import * as Clipboard from 'expo-clipboard'; 
+import * as SecureStore from 'expo-secure-store'; 
+import { API_URl } from '@env'; 
 import SpinnerOverlay from '../Assecories/SpinnerOverlay';
+import firebase from '../../../config'; 
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 
 interface UserData {
   firstName: string;
@@ -28,19 +30,94 @@ interface UserData {
   bankAccount?: {
     interacEmail?: string;
   };
+  profileImage?: string;
 }
 
 const Profile = () => {
   const navigation = useNavigation();
-
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [image, setImage] = useState<string | null>(null);
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!image) return;
+
+    setLoading(true);
+    try {
+      const { uri } = await FileSystem.getInfoAsync(image);
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+          resolve(xhr.response);
+        };
+        xhr.onerror = () => {
+          reject(new Error('Network request failed'));
+        };
+        xhr.responseType = 'blob';
+        xhr.open('GET', uri, true);
+        xhr.send(null);
+      });
+
+      const filename = image.substring(image.lastIndexOf('/') + 1);
+      const ref = firebase.storage().ref().child(filename);
+      await ref.put(blob);
+
+      const downloadURL = await ref.getDownloadURL();
+
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${API_URl}/user/profile-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          imagePath: downloadURL,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        Alert.alert('Success', 'Profile Image Uploaded successfully');
+        // Update the userData state with the new image URL
+        setUserData(prevData => prevData ? {...prevData, profileImage: downloadURL} : null);
+      } else {
+        Alert.alert('Error', data.message || 'Failed to upload image');
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        Alert.alert('Error', err.message || 'An error occurred');
+      } else {
+        Alert.alert('Error', 'An unknown error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = await SecureStore.getItemAsync('token'); // Get the token from SecureStore
+        const token = await SecureStore.getItemAsync('token');
         if (!token) {
           throw new Error('No token found');
         }
@@ -49,7 +126,7 @@ const Profile = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Include the token in the Authorization header
+            'Authorization': `Bearer ${token}`,
           },
         });
 
@@ -57,6 +134,7 @@ const Profile = () => {
 
         if (response.ok && data.success) {
           setUserData(data.data);
+          setImage(data.data.profileImage || null);
         } else {
           setError(data.message || 'Failed to fetch user data');
         }
@@ -82,13 +160,10 @@ const Profile = () => {
   };
 
   if (loading) {
-    return (
-      <SpinnerOverlay />
-    );
+    return <SpinnerOverlay />;
   }
 
   if (error) {
-    console.error('Error fetching user data:', error);
     return (
       <View style={styles.errorContainer}>
         <Text>Error: {error}</Text>
@@ -102,9 +177,16 @@ const Profile = () => {
         <View style={styles.header}>
           <View style={{ width: 24 }} />
         </View>
-        <View style={styles.profileImageContainer}>
-          <Image source={require('../../../assets/MappleApp/user.png')} style={styles.profileImage} />
-        </View>
+        <TouchableOpacity style={styles.profileImageContainer} onPress={pickImage}>
+          <Image 
+            source={{ uri: image || userData?.profileImage || '../../../assets/MappleApp/user.png' }} 
+            style={styles.profileImage} 
+          />
+          <Ionicons name="camera" size={24} color="red" style={styles.camera} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={uploadImage} style={styles.uploadButton}>
+          <Text style={styles.uploadButtonText}>Upload Image</Text>
+        </TouchableOpacity>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>PERSONAL DETAILS</Text>
           <Ionicons name="create-outline" size={24} color="red" style={styles.editIcon} />
@@ -142,7 +224,7 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.interacContainer}>
-          <Text style={styles.interacEmail}>{userData && userData.bankAccount && userData.bankAccount.interacEmail}</Text>
+          <Text style={styles.interacEmail}>{userData?.bankAccount?.interacEmail || ''}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -162,16 +244,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  backArrow: {
-    marginRight: 10,
-  },
-  headerText: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 18,
-    color: 'grey',
-    fontWeight: 'bold',
-  },
   profileImageContainer: {
     alignItems: 'center',
     marginBottom: 20,
@@ -180,6 +252,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+    position: 'relative',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -196,6 +269,22 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
   },
+  camera: {
+    position: 'absolute',
+    bottom: 0,
+    right: '37%',
+  },
+  uploadButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
   detailsContainer: {
     backgroundColor: 'white',
     borderRadius: 10,
@@ -210,15 +299,15 @@ const styles = StyleSheet.create({
   },
   detailsLabel: {
     fontSize: 14,
-    color: '#494D55',
+    color: 'grey',
   },
   detailsValue: {
     fontSize: 14,
-    color: '#1C202B',
-    fontWeight: 'medium',
+    fontWeight: 'bold',
   },
   interacHeaderContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
   },
@@ -226,7 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'grey',
     fontWeight: 'bold',
-    marginRight: 5,
   },
   copyIcon: {
     width: 20,
@@ -235,16 +323,12 @@ const styles = StyleSheet.create({
   interacContainer: {
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 25,
+    padding: 15,
+    marginBottom: 20,
   },
   interacEmail: {
     fontSize: 14,
-    color: '#333',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    fontWeight: 'bold',
   },
   errorContainer: {
     flex: 1,

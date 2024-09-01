@@ -23,7 +23,7 @@ const Verification_05 = () => {
       <SuccessPage
         title="Verification Complete"
         subtitle="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt"
-        buttonText="Finish, Go Homepage"
+        buttonText="Back to homepage"
         buttonAction={() => navigation.navigate('Home')}
       />
     </>

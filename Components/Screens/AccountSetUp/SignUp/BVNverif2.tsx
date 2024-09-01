@@ -7,24 +7,22 @@ import { useNavigation } from '@react-navigation/native';
 import SuccessPage from '../../Assecories/SuccessPage';
 import { ScreenNavigationProp } from '../../../../navigation';
 
-const CreatePin3 = () => {
+const BVNverif2 = () => {
 
   const navigation = useNavigation<ScreenNavigationProp<'SignIn'>>();
 
 
-  // onPress={() => navigation.navigate('SignIn')}
   return (
     <>
       <SuccessPage
-        title="Successful!"
-        subtitle="Please click on the button below to verify your Bank Verification Number (BVN)
-        "
-        buttonText="Verify BVN"
-        buttonAction={() => navigation.navigate('BVNverif')}
+        title="Account Created"
+        subtitle="Welcome to the Maple Family! Your account has been successfully created, and your wallet is now ready to use."
+        buttonText="Login"
+        buttonAction={() => navigation.navigate('SignIn')}
       />
     </>
   );
 };
 
 
-export default CreatePin3;
+export default BVNverif2;

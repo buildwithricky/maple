@@ -1,116 +1,74 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image, TextInput } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AnimatedInput from '../Assecories/AnimatedInput';
 import CustomButton from '../Assecories/CustomButton';
-import BottomSheetModal8 from '../Assecories/Modal/Modal8';
 import { ScreenNavigationProp } from '../../../navigation';
-
-interface Beneficiary {
-  email?: string;
-  tag?: string;
-}
-
-const beneficiaries = [
-  { email: 'John Doe', tag: '123-456-789' },
-  { email: 'Jane Smith', tag: '987-654-321' },
-  // Add more beneficiaries here
-];
+import * as Clipboard from 'expo-clipboard'; // Import Clipboard from expo-clipboard
 
 export default function Interac_1() {
   const navigation = useNavigation<ScreenNavigationProp<'Interac_2'>>();
-  const [showOptions, setShowOptions] = useState(false);
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [verifiedInteracEmail, setVerifiedInteracEmail] = useState('oluwadamilareus@gmail.com'); // Example email, replace with dynamic data
 
-  const [email, setEmail] = useState('');
-  const [recipientTag, setRecipientTag] = useState('');
-  const [narration, setNarration] = useState('');
-
-  const handleSelectBeneficiary = (beneficiary: Beneficiary) => {
-    setEmail(beneficiary.email || '');
-    setRecipientTag(beneficiary.tag || '');
+  const handleCopyEmail = () => {
+    Clipboard.setString("payments@mpexchange.ca");
+    Alert.alert('Copied', 'Email address copied to clipboard');
   };
 
   return (
     <SafeAreaView style={styles.loadingContainer}>
       <View style={styles.outerContainer}>
-        <View style={styles.innerContainer}>
-          <View style={styles.amountContainer}>
-            <Text style={{ fontSize: 16, color: "#A4A6AA" }}>$</Text>
-            <TextInput
-              style={styles.amountInput}
-              keyboardType="numeric"
-              placeholder="5,000"
-            />
-            <TouchableOpacity
-              style={styles.currencySelector}
-              onPress={() => setShowOptions(!showOptions)}
-            >
-              <Image
-                source={require('../../../assets/MappleApp/canada.png')}
-                style={styles.flagImage}
-              />
-              <Text style={styles.currencyText}>CAD</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.walletContainer}>
-          <View style={styles.walletInfo}>
-            <Ionicons name="wallet" size={24} color="#0E314C" />
-            <Text style={styles.walletText}>Wallet Bal: </Text>
-          </View>
-          <Text style={styles.walletAmount}>$30,000.56</Text>
-        </View>
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Text onPress={() => setModalVisible(true)} style={styles.input}>
-          Select Beneficiary
+        <Text style={styles.headerText}>Fund with Interac</Text>
+        <Text style={styles.instructions}>
+          Follow the instructions below to fund your Maple CAD wallet.
         </Text>
+
+        <View style={styles.instructionItem}>
+          <Ionicons name="home-outline" size={20} color="#0E314C" />
+          <Text style={styles.instructionText}>
+            Log into your banking app and send money to payments@mpexchange.ca
+          </Text>
+        </View>
+
+        <View style={styles.instructionItem}>
+          <Ionicons name="person-outline" size={20} color="#0E314C" />
+          <Text style={styles.instructionText}>
+            Make sure you are sending money from your verified Interac address ({verifiedInteracEmail}).
+          </Text>
+        </View>
+
+        <View style={styles.instructionItem}>
+          <Ionicons name="time-outline" size={20} color="#0E314C" />
+          <Text style={styles.instructionText}>
+            It takes an average of 10-20 minutes for the funds to appear in your wallet.
+          </Text>
+        </View>
+
+        <View style={styles.copyContainer}>
+          <Ionicons name="mail-outline" size={20} color="#0E314C" />
+          <View style={styles.copySection}>
+            <Text style={styles.emailText}>Payment email</Text>
+            <Text style={styles.paymentEmail}>payments@mpexchange.ca</Text>
+          </View>
+          <TouchableOpacity onPress={handleCopyEmail} style={styles.copyButton}>
+            <Text style={styles.copyButtonText}>copy</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.helpLink}>
+          <Ionicons name="help-circle-outline" size={20} color="#0E314C" />
+          <Text style={styles.helpText}>Can’t find your payment?</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.inputContainer}>
-        <AnimatedInput
-          placeholder="Interac Email"
-          value={email}
-          onChangeText={setEmail}
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <AnimatedInput
-          placeholder="Enter Recipient's Tag"
-          value={recipientTag}
-          onChangeText={setRecipientTag}
-        />
-      </View>
-
-
-      <View style={styles.inputContainer}>
-        <AnimatedInput
-          placeholder="Narration"
-          value={narration}
-          onChangeText={setNarration}
-        />
-      </View>
-
-      <View style={styles.buttonContainer}>
+      {/* <View style={styles.buttonContainer}>
         <CustomButton
           width={"100%"}
           gradientColors={['#ee0979', '#ff6a00']}
           title="Continue"
           onPress={() => navigation.navigate('Interac_2')}
         />
-      </View>
-
-      <BottomSheetModal8
-        isVisible={isModalVisible}
-        onClose={() => setModalVisible(false)}
-        beneficiaries={beneficiaries}
-        onSelectBeneficiary={handleSelectBeneficiary}
-        isInterac={true} // Specify true for email/tag based data
-      />
+      </View> */}
     </SafeAreaView>
   );
 }
@@ -122,91 +80,76 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   outerContainer: {
-    backgroundColor: '#d1d1d157',
-    borderRadius: 15,
-    paddingBottom: 20,
-    marginBottom: 13,
-    paddingTop: 1,
-  },
-  innerContainer: {
-    backgroundColor: 'white',
-    borderRadius: 15,
     padding: 20,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 15,
+    marginBottom: 20,
+  },
+  headerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0E314C',
     marginBottom: 10,
   },
-  amountContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  amountInput: {
-    fontSize: 18,
-    color: 'grey',
-    marginRight: 30,
-    padding: 5,
-    width: "60%"
-  },
-  currencySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff3d',
-    borderRadius: 10,
-    padding: 10,
-    paddingVertical: 5,
-  },
-  flagImage: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 5,
-  },
-  currencyText: {
-    color: '#0E314C',
-    marginRight: 5,
-  },
-  walletContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 15,
-    paddingRight: 20,
-    paddingLeft: 20,
-  },
-  walletInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  walletText: {
-    color: '#0E314C',
-    marginLeft: 5,
-  },
-  walletAmount: {
-    color: '#0E314C',
-    fontSize: 17,
-  },
-  inputContainer: {
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 12,
-    padding: 10,
+  instructions: {
     fontSize: 16,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    width: "100%",
-    color: "#aaa"
+    color: '#333',
+    marginBottom: 20,
+  },
+  instructionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  instructionText: {
+    marginLeft: 10,
+    fontSize: 15,
+    color: '#555',
+  },
+  copyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  copySection: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  emailText: {
+    fontSize: 14,
+    color: '#555',
+  },
+  paymentEmail: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0E314C',
+  },
+  copyButton: {
+    backgroundColor: '#0E314C',
+    borderRadius: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 15,
+  },
+  copyButtonText: {
+    color: 'white',
+    fontSize: 14,
+  },
+  helpLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  helpText: {
+    fontSize: 14,
+    color: '#0E314C',
+    textDecorationLine: 'underline',
+    marginLeft: 5,
   },
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
     justifyContent: 'center',
-    marginBottom: 13,
   },
 });
