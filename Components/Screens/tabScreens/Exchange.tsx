@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, TextInput } from 'react-native';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, KeyboardAvoidingView, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import CustomButton from '../Assecories/CustomButton'; // Adjust the path as needed
 import { ScreenNavigationProp } from '../../../navigation';
+import * as SecureStore from 'expo-secure-store';
+import { API_URl } from '@env';
 
 const options = [
   { currency: 'CAD', flag: require('../../../assets/MappleApp/canada.png') },
@@ -15,6 +17,13 @@ type CurrencyOption = {
   flag: any;
 };
 
+interface Rate {
+  _id: string;
+  rate: number;
+  exchange: string;
+  __v: number;
+}
+
 export default function Exchange() {
   const navigation = useNavigation<ScreenNavigationProp<'Exchange_2'>>();
   const [selectedCurrency, setSelectedCurrency] = useState('CAD');
@@ -23,6 +32,10 @@ export default function Exchange() {
   const [showBeneficiaryOptions, setShowBeneficiaryOptions] = useState(false);
   const [cadAmount, setCadAmount] = useState('');
   const [ngnAmount, setNgnAmount] = useState('');
+  const [cadAmouns, setCadAmounts] = useState('');
+  const [ngnAmounts, setNgnAmounts] = useState('');
+  const [rates, setRates] = useState<Rate[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleCurrencySelect = (currency: string) => {
     setSelectedCurrency(currency);
@@ -36,44 +49,121 @@ export default function Exchange() {
     setSelectedCurrency(currency === 'NGN' ? 'CAD' : 'NGN');
   };
 
-  const handleCadAmountChange = (amount: string) => {
-    setCadAmount(amount);
-    if (selectedCurrency === 'CAD') {
-      setNgnAmount((Number(amount) * 1082).toString()); // Convert CAD to NGN
-    } else {
-      setCadAmount((Number(amount) / 1127).toString()); // Convert NGN to CAD
+  // Fetch exchange rates
+  const fetchRates = async () => {
+    setLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${API_URl}/rate/get-rates`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setRates(data.data);
+      } else {
+        Alert.alert('Error', data.message || 'Unknown error');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert('Error', error.message);
+      } else {
+        Alert.alert('Error', 'An unknown error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleNgnAmountChange = (amount: string) => {
-    setNgnAmount(amount);
-    if (selectedCurrency === 'NGN') {
-      setCadAmount((Number(amount) / 1127).toString()); // Convert NGN to CAD
-    } else {
-      setNgnAmount((Number(amount) * 1082).toString()); // Convert CAD to NGN
-    }
-  };
-
-  const getCurrencySymbol = (currency: string) => {
-    return currency === 'CAD' ? '$' : 'N';
-  };
-
-  // Fetch API and update state
   useEffect(() => {
-    const fetchExchangeRate = async () => {
-      try {
-        const response = await fetch('https://maplepay-server.onrender.com/api'); 
-        const data = await response.json();
+    fetchRates();
+  }, []);
 
-        setCadAmount((prevAmount) => (Number(prevAmount) * data.CAD_TO_NGN).toString());
-        setNgnAmount((prevAmount) => (Number(prevAmount) * data.NGN_TO_CAD).toString());
+  const handleCurrencyConversion = (amount: string, fromCurrency: string) => {
+    const numericAmount = parseFloat(amount.replace(/,/g, ''));
+    if (isNaN(numericAmount)) {
+      return;
+    }
+
+    if (fromCurrency === 'CAD') {
+      const convertedAmount = numericAmount * cadToNgnRate;
+      setNgnAmount(convertedAmount.toFixed(2));
+      setCadAmount(amount);
+    } else {
+      const convertedAmount = numericAmount / ngnToCadRate;
+      setCadAmount(convertedAmount.toFixed(2));
+      setNgnAmount(amount);
+    }
+  };
+
+  const handleCadInputChange = (value: string) => {
+    setCadAmount(value);
+    handleCurrencyConversion(value, 'CAD');
+  };
+
+  const handleNgnInputChange = (value: string) => {
+    setNgnAmount(value);
+    handleCurrencyConversion(value, 'NGN');
+  };
+
+    useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const cad = await SecureStore.getItemAsync('CadBalance');
+        const ngn = await SecureStore.getItemAsync('walletBalance');
+        if (cad) setCadAmounts(cad);
+        if (ngn) setNgnAmounts(ngn);
       } catch (error) {
-        console.error(error);
+        console.error('Error retrieving wallet balances:', error);
       }
     };
+    fetchBalances();
+    // Set up an interval to fetch balances every 5 seconds
+    const intervalId = setInterval(fetchBalances, 5000);
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []);
 
-    fetchExchangeRate();
-  }, [selectedCurrency, beneficiaryCurrency]);
+  const storeConversionData = async () => {
+    try {
+      // Store the amount and currency you're converting from
+      await SecureStore.setItemAsync('fromCurrency', selectedCurrency);
+      await SecureStore.setItemAsync('fromAmount', cadAmount);
+  
+      // Store the amount and currency you're converting to
+      await SecureStore.setItemAsync('toCurrency', beneficiaryCurrency);
+      await SecureStore.setItemAsync('toAmount', ngnAmount);
+  
+      // Store the conversion rates
+      if (selectedCurrency === 'CAD' && beneficiaryCurrency === 'NGN') {
+        await SecureStore.setItemAsync('cadToNgnRate', cadToNgnRate.toString());
+      } else if (selectedCurrency === 'NGN' && beneficiaryCurrency === 'CAD') {
+        await SecureStore.setItemAsync('ngnToCadRate', ngnToCadRate.toString());
+      }
+  
+      console.log(selectedCurrency)
+      console.log(cadAmount)
+      console.log(ngnAmount)
+      console.log(beneficiaryCurrency)
+      console.log(cadToNgnRate.toString())
+      console.log(ngnToCadRate.toString())
+    } catch (error) {
+      console.error('Error storing data:', error);
+      Alert.alert('Error', 'Failed to store conversion data');
+    }
+  };  
+
+  // Extract CAD to NGN and NGN to CAD rates from the response
+  const cadToNgnRate = rates.find(rate => rate.exchange === 'CAD-TO-NGN')?.rate || 0;
+  const ngnToCadRate = rates.find(rate => rate.exchange === 'NGN-TO-CAD')?.rate || 0;
+  
 
   return (
     <SafeAreaView style={styles.loadingContainer}>
@@ -84,11 +174,11 @@ export default function Exchange() {
           <View style={styles.outerContainer}>
             <View style={styles.innerContainer}>
               <View style={styles.amountContainer}>
-                <Text style={{ fontSize: 16, color: "#A4A6AA" }}>{getCurrencySymbol(selectedCurrency)}</Text>
+                <Text style={{ fontSize: 16, color: "#A4A6AA" }}>{selectedCurrency === 'CAD' ? '$' : '₦'}</Text>
                 <TextInput
                   style={styles.amountInput}
                   value={selectedCurrency === 'CAD' ? cadAmount : ngnAmount}
-                  onChangeText={selectedCurrency === 'CAD' ? handleCadAmountChange : handleNgnAmountChange}
+                  onChangeText={selectedCurrency === 'CAD' ? handleCadInputChange : handleNgnInputChange}
                   keyboardType="numeric"
                   placeholder="5,000"
                 />
@@ -124,7 +214,7 @@ export default function Exchange() {
                 <Ionicons name="wallet" size={24} color="#0E314C" />
                 <Text style={styles.walletText}>Wallet Bal: </Text>
               </View>
-              <Text style={styles.walletAmount}>{selectedCurrency === 'CAD' ? '$30,000.56' : 'N300,000.56'}</Text>
+              <Text style={styles.walletAmount}>{selectedCurrency === 'CAD' ? cadAmouns : ngnAmounts}</Text>
             </View>
           </View>
 
@@ -135,7 +225,9 @@ export default function Exchange() {
                 <Text style={styles.smallContainerText}> CAD --{'>'} </Text>
                 <Image source={require('../../../assets/MappleApp/Nigeria.png')} style={styles.icon}/>
                 <Text style={styles.smallContainerText}> NGN </Text>
-                <Text style={[styles.smallContainerText, { fontWeight: "500", fontSize: 15, paddingLeft: 15 }]}> N1,082.00 </Text>
+                <Text style={[styles.smallContainerText, { fontWeight: "500", fontSize: 15, paddingLeft: 15 }]}>
+                  ₦{cadToNgnRate.toFixed(2)}
+                </Text>
               </View>
             </View>
             <View style={styles.smallContainer}>
@@ -144,7 +236,9 @@ export default function Exchange() {
                 <Text style={styles.smallContainerText}> NGN --{'>'} </Text>
                 <Image source={require('../../../assets/MappleApp/canada.png')} style={styles.icon}/>
                 <Text style={styles.smallContainerText}> CAD </Text>
-                <Text style={[styles.smallContainerText, { fontWeight: "500", fontSize: 15, paddingLeft: 15 }]}> N1,127.00 </Text>
+                <Text style={[styles.smallContainerText, { fontWeight: "500", fontSize: 15, paddingLeft: 15 }]}>
+                  ${ngnToCadRate.toFixed(2)}
+                </Text>
               </View>
             </View>
           </View>
@@ -153,13 +247,12 @@ export default function Exchange() {
           <View style={styles.secondOuterContainer}>
             <View style={styles.innerContainer}>
               <View style={styles.amountContainer}>
-                <Text style={{ fontSize: 16, color: "#A4A6AA" }}>{getCurrencySymbol(beneficiaryCurrency)}</Text>
+                <Text style={{ fontSize: 16, color: "#A4A6AA" }}>{beneficiaryCurrency === 'CAD' ? '$' : '₦'}</Text>
                 <TextInput
                   style={styles.amountInput}
                   value={beneficiaryCurrency === 'CAD' ? cadAmount : ngnAmount}
-                  onChangeText={beneficiaryCurrency === 'CAD' ? handleCadAmountChange : handleNgnAmountChange}
-                  keyboardType="numeric"
-                  placeholder="4,000,000"
+                  editable={false}
+                  placeholder="Converted amount"
                 />
                 <TouchableOpacity
                   style={styles.currencySelector}
@@ -193,7 +286,7 @@ export default function Exchange() {
                 <Ionicons name="wallet" size={24} color="#0E314C" />
                 <Text style={styles.walletText}>Wallet Bal: </Text>
               </View>
-              <Text style={styles.walletAmount}>{beneficiaryCurrency === 'CAD' ? '$30,000.56' : 'N300,000.56'}</Text>
+              <Text style={styles.walletAmount}>{beneficiaryCurrency === 'CAD' ? cadAmouns : ngnAmounts}</Text>
             </View>
           </View>
 
@@ -202,7 +295,10 @@ export default function Exchange() {
               width={"100%"}
               gradientColors={['#ee0979', '#ff6a00']}
               title="Continue"
-              onPress={() => navigation.navigate('Exchange_2')}
+              onPress={async () => {
+                await storeConversionData();
+                navigation.navigate('Exchange_2');
+              }}
             />
           </View>
         </KeyboardAvoidingView>
@@ -252,7 +348,7 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     fontSize: 18,
-    color: 'grey',
+    color: 'black',
     marginRight: 30,
     padding: 5,
     width: "60%"
@@ -374,5 +470,5 @@ const styles = StyleSheet.create({
   icon: {
     width: 15,
     height: 15,
-  }
+  },
 });

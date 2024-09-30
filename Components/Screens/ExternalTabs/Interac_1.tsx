@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import CustomButton from '../Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
 import * as Clipboard from 'expo-clipboard'; // Import Clipboard from expo-clipboard
+import * as SecureStore from 'expo-secure-store';
 
 export default function Interac_1() {
   const navigation = useNavigation<ScreenNavigationProp<'Interac_2'>>();
-  const [verifiedInteracEmail, setVerifiedInteracEmail] = useState('oluwadamilareus@gmail.com'); // Example email, replace with dynamic data
+  const [verifiedInteracEmail, setVerifiedInteracEmail] = useState(); // Example email, replace with dynamic data
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    const getEmail = async () => {
+      try {
+        const storedEmail = await SecureStore.getItemAsync('email');
+        if (storedEmail !== null) {
+          setEmail(storedEmail);
+        }
+      } catch (error) {
+        console.error('Failed to load email.', error);
+      }
+    };
+
+    getEmail();
+  }, []);
 
   const handleCopyEmail = () => {
     Clipboard.setString("payments@mpexchange.ca");
@@ -24,28 +41,28 @@ export default function Interac_1() {
         </Text>
 
         <View style={styles.instructionItem}>
-          <Ionicons name="home-outline" size={20} color="#0E314C" />
+          <Ionicons name="home-outline" size={20} color="#F63641" />
           <Text style={styles.instructionText}>
             Log into your banking app and send money to payments@mpexchange.ca
           </Text>
         </View>
 
         <View style={styles.instructionItem}>
-          <Ionicons name="person-outline" size={20} color="#0E314C" />
+          <Ionicons name="person-outline" size={20} color="#F63641" />
           <Text style={styles.instructionText}>
-            Make sure you are sending money from your verified Interac address ({verifiedInteracEmail}).
+            Make sure you are sending money from your verified Interac address ({email}).
           </Text>
         </View>
 
         <View style={styles.instructionItem}>
-          <Ionicons name="time-outline" size={20} color="#0E314C" />
+          <Ionicons name="time-outline" size={20} color="#F63641" />
           <Text style={styles.instructionText}>
             It takes an average of 10-20 minutes for the funds to appear in your wallet.
           </Text>
         </View>
 
         <View style={styles.copyContainer}>
-          <Ionicons name="mail-outline" size={20} color="#0E314C" />
+          <Ionicons name="mail-outline" size={20} color="#F63641" />
           <View style={styles.copySection}>
             <Text style={styles.emailText}>Payment email</Text>
             <Text style={styles.paymentEmail}>payments@mpexchange.ca</Text>
@@ -56,8 +73,8 @@ export default function Interac_1() {
         </View>
 
         <TouchableOpacity style={styles.helpLink}>
-          <Ionicons name="help-circle-outline" size={20} color="#0E314C" />
-          <Text style={styles.helpText}>Can’t find your payment?</Text>
+          <Ionicons name="help-circle-outline" size={20} color="#F63641" />
+          <Text style={styles.helpText}>Can't find your payment?</Text>
         </TouchableOpacity>
       </View>
 
@@ -80,7 +97,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   outerContainer: {
-    padding: 20,
+    padding: 10,
     backgroundColor: '#F5F5F5',
     borderRadius: 15,
     marginBottom: 20,
@@ -88,7 +105,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#0E314C',
+    color: '#F63641',
     marginBottom: 10,
   },
   instructions: {
@@ -121,12 +138,12 @@ const styles = StyleSheet.create({
     color: '#555',
   },
   paymentEmail: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#0E314C',
+    color: '#F63641',
   },
   copyButton: {
-    backgroundColor: '#0E314C',
+    backgroundColor: '#F63641',
     borderRadius: 5,
     paddingVertical: 5,
     paddingHorizontal: 15,
@@ -142,7 +159,7 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 14,
-    color: '#0E314C',
+    color: '#F63641',
     textDecorationLine: 'underline',
     marginLeft: 5,
   },

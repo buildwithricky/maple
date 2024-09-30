@@ -1,5 +1,5 @@
 import React, { useEffect,useState } from 'react';
-import { Platform, LogBox, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Platform, LogBox, View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -91,14 +91,20 @@ import transfer3 from '../Screens/ExternalTabs/WTWtransfer/transfer3';
 import transfer4 from '../Screens/ExternalTabs/WTWtransfer/transfer4';
 import TwoFA from '../Screens/AccountSetUp/SignUp/2FA';
 import NotificationDes from '../Screens/tabScreens/NotificationDes';
+import Bene_4 from '../Screens/ExternalTabs/Bene_4';
+import CADLimitsScreen from '../Screens/ExternalTabs/Limits/CADLimits';
+import NGNLimitsScreen from '../Screens/ExternalTabs/Limits/NGNLimits';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 
 const ios = Platform.OS === 'ios';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const { width, height } = Dimensions.get('window');
 
 const menuIcons = (route, focused) => {
+  // console.log(`Width: ${width}, Height: ${height}`);
   let icon;
 
   if (route.name === 'home') {
@@ -117,6 +123,22 @@ const menuIcons = (route, focused) => {
       <Text style={{ color: focused ? '#1C202B' : '#8e8e8e', fontSize: 12, marginTop: 2 }}>
         {route.name.charAt(0).toUpperCase() + route.name.slice(1)}
       </Text>
+      {focused && (
+        <LinearGradient
+          colors={['#EE0979', '#FF6A00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{
+            position: 'absolute',
+            bottom: height > 930 ? -25 : (ios ? 0 : 0),
+            left: 0,
+            right: 0,
+            height: 6,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -293,11 +315,13 @@ getTokenFromSecureStore()
           <Stack.Screen name="Transactions" component={Transactions} options={{headerShown: false}} />
           <Stack.Screen name="TransactionsList" component={TransactionPage} options={{ ...tabScreenOptions, headerTitle: "Transactions" }} />
           <Stack.Screen name="TransactionDetail" component={TransactionDetails} options={{ ...tabScreenOptions, headerTitle: "Transaction Details" }} />
+          <Stack.Screen name="CADLimits" component={CADLimitsScreen} options={{ ...tabScreenOptions, headerTitle: "CAD limits" }} />
+          <Stack.Screen name="NGNLimits" component={NGNLimitsScreen} options={{ ...tabScreenOptions, headerTitle: "NGN limits" }} />
           <Stack.Screen name="NotificationDes" component={NotificationDes} options={{ ...tabScreenOptions, headerTitle: "Notification Details" }} />
           <Stack.Screen name="Add" component={Add} options={{headerShown: false}} />
           <Stack.Screen name="Send" component={Send} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Swap" component={Swap} options={{headerShown: false}} />
-          <Stack.Screen name="Interac_1" component={Interac_1} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
+          <Stack.Screen name="Interac_1" component={Interac_1} options={{ ...tabScreenOptions, headerTitle: "Add Funds" }} />
           <Stack.Screen name="Interac_2" component={Interac_2} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Interac_3" component={Interac_3} options={{ ...tabScreenOptions, headerTitle: "Transfer Summary" }} />
           <Stack.Screen name="Interac_4" component={Interac_4} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />
@@ -305,6 +329,7 @@ getTokenFromSecureStore()
           <Stack.Screen name="Bene_1" component={Bene_1} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Bene_2" component={Bene_2} options={{ ...tabScreenOptions, headerTitle: "Transfer Summary" }} />
           <Stack.Screen name="Bene_3" component={Bene_3} options={{headerShown: false}} />
+          <Stack.Screen name="Bene_4" component={Bene_4} options={{ ...tabScreenOptions, headerTitle: "Enter Transaction PIN" }} />
           <Stack.Screen name="wtwTransfer1" component={Transfer1} options={{ ...tabScreenOptions, headerTitle: "1 of 3" }} />
           {/* <Stack.Screen name="wtwTransfer2" component={transfer2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} /> */}
           <Stack.Screen name="wtwTransfer3" component={transfer3} options={{ ...tabScreenOptions, headerTitle: "2 of 3" }} />
@@ -322,7 +347,7 @@ getTokenFromSecureStore()
           <Stack.Screen name="AccountVerification3" component={AccountVerification3} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
           <Stack.Screen name="Notifications" component={Notifications} options={{headerShown: false}} />
           <Stack.Screen name="RateAlerts" component={RateAlerts} options={{ ...tabScreenOptions, headerTitle: "Our Rates" }} />
-          <Stack.Screen name="Transaction" component={Transaction} options={{headerShown: false}} />
+          <Stack.Screen name="Transaction" component={Transaction} options={{ ...tabScreenOptions, headerTitle: "Transaction Limit" }} />
           <Stack.Screen name="Change" component={Change} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
           <Stack.Screen name="Factor" component={Factor} options={{headerShown: false}} />
           <Stack.Screen name="Device" component={Device} options={{ ...tabScreenOptions, headerTitle: "Devices and Sessions" }} />

@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ScreenNavigationProp } from '../../../navigation';
 
 export default function Bene_2() {
-  const navigation = useNavigation<ScreenNavigationProp<'Bene_3'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Bene_4'>>();
 
   const [amount, setAmount] = useState('');
   const [accountName, setAccountName] = useState('');
@@ -129,7 +129,7 @@ export default function Bene_2() {
             width={"70%"}
             gradientColors={['#ee0979', '#ff6a00']}
             title="Send"
-            onPress={() => navigation.navigate('Bene_3')}
+            onPress={() => navigation.navigate('Bene_4')}
           />
         </View>
         <View style={styles.buttonContainer}>

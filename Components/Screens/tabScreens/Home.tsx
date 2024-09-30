@@ -39,6 +39,7 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isVerified, setIsVerified] = useState(false);
   const [nairaBalance, setNairaBalance] = useState('₦0.00');
+  const [cadBalance, setCadBalance] = useState('$0.00'); 
   const [refreshing, setRefreshing] = useState(false);
   const [prevBalance, setPrevBalance] = useState('₦0.00');
   const [image, setImage] = useState<string | null>(null);
@@ -49,9 +50,13 @@ export default function Home() {
   useEffect(() => {
     requestNotificationPermission();
     fetchAllData();
-    const intervalId = setInterval(fetchTransactions, 10000); // Poll every 10 seconds
+    const transactionIntervalId = setInterval(fetchTransactions, 10000);
+    const cadBalanceIntervalId = setInterval(fetchCadBalance, 10000);
   
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    return () => {
+      clearInterval(transactionIntervalId);
+      clearInterval(cadBalanceIntervalId);
+    };
   }, [currentPage]);
   
   useEffect(() => {
@@ -96,6 +101,7 @@ export default function Home() {
     await fetchTransactions();
     await checkVerificationStatus();
     await fetchNairaBalance();
+    await fetchCadBalance();
   };
 
   const fetchNames = async () => {
@@ -149,7 +155,7 @@ export default function Home() {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "New Transaction Alert",
-        body: `You have a new transaction: ${transaction.type} of ${transaction.sourceAmount} ${transaction.sourceCurrency}`,
+        body: `You have a new transaction: ${transaction.type} of ${getTransactionAmount(transaction)} ${transaction.sourceCurrency}`,
       },
       trigger: null,
     });
@@ -188,6 +194,28 @@ export default function Home() {
       console.error('Error fetching wallet balance:', error);
     }
   };  
+  const fetchCadBalance = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const response = await fetch(`${API_URl}/wallet/balance/cad`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = await response.json();
+      if (result.success) {
+        const newBalance = `$${parseFloat(result.data.walletBalance).toFixed(2)}`;
+        setCadBalance(newBalance);
+        // setPrevBalance(newBalance);
+        await SecureStore.setItemAsync('CadBalance', newBalance);
+      } else {
+        console.error('Error fetching CAD balance:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching CAD balance:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -270,7 +298,7 @@ export default function Home() {
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'Fund Swap':
+      case 'FundSwap':
         return require("../../../assets/MappleApp/Icon_1.png");
       case 'Incoming':
         return require("../../../assets/MappleApp/Icon_2.png");
@@ -297,6 +325,22 @@ export default function Home() {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     return `${day}/${month} ${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+  };
+  const getTransactionAmount = (transaction: { _id?: string; type?: string; sourceCurrency?: string; sourceAmount: any; createdAt?: string; destinationAmount?: any; }) => {
+    const amount = transaction.sourceAmount === "null" || !transaction.sourceAmount
+      ? transaction.destinationAmount
+      : transaction.sourceAmount;
+  
+    if (transaction.sourceCurrency === 'CAD') {
+      return `$${amount}`;
+    } else if (transaction.sourceCurrency === 'NGN') {
+      return `₦${amount}`;
+    } else {
+      return amount;
+    }
+  };
+  const formatNumber = (num: { toString: () => string; }) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
 
@@ -332,7 +376,9 @@ export default function Home() {
             <View style={styles.walletInnerContainer}>
               <Text style={styles.walletBalanceText}>Wallet Balance</Text>
               <Text style={styles.walletAmountText}>
-                {currency === 'CAD' ? '$1000.00' : nairaBalance}
+                {currency === 'CAD' 
+                ? `$${formatNumber(parseFloat(cadBalance.replace('$', '')).toFixed(2))}` 
+                : `₦${formatNumber(parseFloat(nairaBalance.replace('₦', '')).toFixed(2))}`}
               </Text>
               {!isVerified && (
                 <BlurView intensity={50} style={StyleSheet.absoluteFill} />
@@ -390,7 +436,9 @@ export default function Home() {
                     <Text style={styles.transactionCurrencyText}>{transaction.sourceCurrency}</Text>
                   </View>
                   <View style={styles.transactionAmountContainer}>
-                    <Text style={styles.transactionAmountText}>{transaction.sourceAmount}</Text>
+                    <Text style={styles.transactionAmountText}>
+                      {`${getTransactionAmount(transaction).charAt(0)}${formatNumber(parseFloat(getTransactionAmount(transaction).replace(/[^0-9.-]+/g, "")))}`}
+                    </Text>
                     <Text style={styles.transactionDateText}>{formatDate(transaction.createdAt)}</Text>
                   </View>
                 </View>

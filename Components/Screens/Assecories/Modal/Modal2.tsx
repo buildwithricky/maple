@@ -7,6 +7,8 @@ import CustomButton from '../CustomButton';
 import { DocumentDuplicateIcon } from 'react-native-heroicons/outline';
 import { API_URl } from '@env';
 import { Ionicons } from '@expo/vector-icons';
+import { ScreenNavigationProp } from '../../../../navigation';
+import { useNavigation } from '@react-navigation/native';
 
 interface AccountInformation {
   accountNumber: string;
@@ -26,6 +28,7 @@ const BottomSheetModal2: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
   const translateY = React.useRef(new Animated.Value(300)).current;
   const [accountDetails, setAccountDetails] = useState<AccountInformation | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const navigation = useNavigation<ScreenNavigationProp<'Interac_1'>>();
 
   const fetchAccountDetails = async () => {
     try {
@@ -79,6 +82,12 @@ const BottomSheetModal2: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
       onClose();
     }
   };
+
+  const handleShowCadDetails = () => {
+    navigation.navigate('Interac_1')
+    setAddModalVisible(false);
+    onClose();
+  }
 
   useEffect(() => {
     if (isVisible) {
@@ -158,15 +167,28 @@ const BottomSheetModal2: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
                     ) : (
                       <Text>Loading...</Text>
                     )}
-                    
                     <View style={styles.buttonContainer}>
-                      <DocumentDuplicateIcon size="25" strokeWidth={2} color="#fff" style={{ position: "absolute", left: 45, top: 8, zIndex: 100 }} />
+                      <DocumentDuplicateIcon size="25" strokeWidth={2} color="#fff" style={{ position: "absolute", left: 30, top: 8, zIndex: 100 }} />
                       <CustomButton
                         width={"100%"}
                         gradientColors={['#ee0979', '#ff6a00']}
                         title="Copy Account Details"
                         onPress={handleCopyAccountDetails}
                       />
+                    </View>
+                      <View style={{marginTop: 20}}>
+                      <Text style={styles.boxHead}>Fund CAD Account</Text>
+                      <Text style={styles.boxBody}>
+                        By clicking the button below, you'll be redirected to a page where you can fund your CAD account.
+                      </Text>
+                      <View style={{display: "flex", flexDirection:"row", justifyContent: "center"}}>
+                        <CustomButton
+                          width={"100%"}
+                          gradientColors={['#ee0979', '#ff6a00']}
+                          title="Click Here to Fund CAD Account"
+                          onPress={handleShowCadDetails}
+                        />
+                      </View>
                     </View>
                   </View>
                 </Animated.View>

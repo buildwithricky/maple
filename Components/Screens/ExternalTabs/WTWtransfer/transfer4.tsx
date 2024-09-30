@@ -16,12 +16,14 @@ import CustomButton from '../../Assecories/CustomButton';
 import DialPad from '../../AccountSetUp/SignUp/DialPad';
 import SpinnerOverlay from '../../Assecories/SpinnerOverlay';
 import { API_URl } from '@env';
+import { decrypt } from '../../../../utils/Encryp';
 
 const Transfer4 = () => {
   const navigation = useNavigation<ScreenNavigationProp<'Interac_5'>>();
   const [code, setCode] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [biometricType, setBiometricType] = useState<'none' | 'fingerprint' | 'faceId'>('none');
   const [transactionData, setTransactionData] = useState<{
     amount: number;
     mail: string;
@@ -47,11 +49,19 @@ const Transfer4 = () => {
         const storedEmail = await SecureStore.getItemAsync('transactionMail');
 
         if (storedCurrency) transactionData.currency = storedCurrency;
-        if (storedAmount) transactionData.amount = Number(storedAmount); // Convert to number
+        if (storedAmount) transactionData.amount = Number(storedAmount);
         if (storedDescription) transactionData.description = storedDescription;
         if (storedEmail) transactionData.mail = storedEmail;
 
         setTransactionData({ ...transactionData });
+
+        // Check for biometric capabilities
+        const biometricTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          setBiometricType('faceId');
+        } else if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricType('fingerprint');
+        }
       } catch (error) {
         console.error('Error retrieving stored data:', error);
       }
@@ -80,33 +90,38 @@ const Transfer4 = () => {
     }
   };
 
-  const handleFingerprintLogin = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    if (!hasHardware) {
-      alert('This device does not have a fingerprint scanner.');
-      return;
-    }
-
-    const biometricRecords = await LocalAuthentication.isEnrolledAsync();
-    if (!biometricRecords) {
-      alert('No fingerprints are registered. Please register a fingerprint.');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync();
-    if (result.success) {
-      navigation.navigate('Interac_5');
-    } else {
-      alert('Fingerprint authentication failed. Please try again.');
+  const handleAuthentication = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to confirm transaction',
+        fallbackLabel: 'Use PIN',
+      });
+      if (result.success) {
+        // Biometric authentication successful
+        // Now, we need to get the stored PIN, decrypt it, and confirm it
+        const encryptedPin = await SecureStore.getItemAsync('userPin');
+        if (encryptedPin) {
+          const decryptedPin = decrypt(encryptedPin);
+          await handleConfirmPress(decryptedPin);
+        } else {
+          console.error('No stored PIN found');
+          alert('An error occurred. Please try again or use your PIN.');
+        }
+      } else {
+        console.log('Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      alert('An error occurred during authentication. Please try again.');
     }
   };
 
   const isCodeComplete = code.every(digit => digit !== '');
 
-  const handleConfirmPress = async () => {
-    if (isCodeComplete) {
+  const handleConfirmPress = async (pin?: string) => {
+    if (isCodeComplete || pin) {
       setLoading(true);
-      transactionData.transactionPin = code.join('');
+      transactionData.transactionPin = pin || code.join('')
       try {
         const token = await SecureStore.getItemAsync('token');
         const response = await fetch(`${API_URl}/wallet/w2w`, {
@@ -123,7 +138,7 @@ const Transfer4 = () => {
           alert(data.message);
           navigation.navigate('Interac_5');
         } else {
-          alert('Transfer failed. Please try again.');
+          alert(data.message);
           setError(true);
           Vibration.vibrate();
         }
@@ -165,13 +180,17 @@ const Transfer4 = () => {
                 width={163}
                 gradientColors={isCodeComplete ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
                 title="Confirm"
-                onPress={handleConfirmPress}
+                onPress={() => handleConfirmPress()}
                 textStyle={isCodeComplete ? styles.buttonText : styles.buttonTextDisabled}
               />
             </View>
 
             <View style={styles.dialPadContainer}>
-              <DialPad onPress={handleDialPadPress} fingerprintPress={handleFingerprintLogin} />
+              <DialPad
+                onPress={handleDialPadPress}
+                biometricPress={handleAuthentication}
+                biometricType={biometricType}
+              />
             </View>
           </View>
         </ScrollView>

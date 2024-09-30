@@ -1,59 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   SafeAreaView,
   Vibration,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import DialPad from '../AccountSetUp/SignUp/DialPad';
 import CustomButton from '../../Screens/Assecories/CustomButton';
 import { ScreenNavigationProp } from '../../../navigation';
-
-const correctCode = ['1', '2', '3', '4']; // Example correct code
+import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { API_URl } from '@env';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
+import { decrypt } from '../../../utils/Encryp';
 
 const Exchange_3 = () => {
   const navigation = useNavigation<ScreenNavigationProp<'CreatePin3' | 'Exchange_4'>>();
   const [code, setCode] = useState(['', '', '', '']);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
   const [isCodeCorrect, setIsCodeCorrect] = useState(false);
-
-  const handleResendCode = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 3000);
-  };
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [biometricType, setBiometricType] = useState<'none' | 'fingerprint' | 'faceId'>('none');
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-
-    // Check if all code inputs are filled
-    if (newCode.every(digit => digit !== '')) {
-      setLoading(true);
-      // Simulate a network request
-      setTimeout(() => {
-        setLoading(false);
-        if (newCode.join('') === correctCode.join('')) {
-          setIsCodeCorrect(true); // Enable the button
-        } else {
-          // Set error state if code is incorrect
-          setError(true);
-          Vibration.vibrate();
-        }
-      }, 3); // Show spinner for 3 seconds
-    } else {
-      setError(false); // Reset error state if not all inputs are filled
-    }
+    setIsCodeCorrect(newCode.every(digit => digit !== ''));
   };
 
   const handleDialPadPress = (value: string) => {
@@ -70,52 +47,153 @@ const Exchange_3 = () => {
     }
   };
 
-  const isCodeComplete = code.every(digit => digit !== '');
+  const handleContinue = async (pin?: string) => {
+    setLoading(true);
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      const selectedCurrency = await SecureStore.getItemAsync('fromCurrency');
+      const beneficiaryCurrency = await SecureStore.getItemAsync('toCurrency');
+      const cadAmount = await SecureStore.getItemAsync('fromAmount');
+      const ngnAmount = await SecureStore.getItemAsync('toAmount');
+      const cadToNgnRate = await SecureStore.getItemAsync('cadToNgnRate');
+      const ngnToCadRate = await SecureStore.getItemAsync('ngnToCadRate');
+
+      let amount = 0;
+      let rate = 0;
+      let currency = '';
+
+      if (selectedCurrency === 'NGN' && beneficiaryCurrency === 'CAD') {
+        amount = parseInt(ngnAmount || '0');
+        rate = parseFloat(ngnToCadRate || '0');
+        currency = 'NGN';
+      } else if (selectedCurrency === 'CAD' && beneficiaryCurrency === 'NGN') {
+        amount = parseInt(cadAmount || '0');
+        rate = parseFloat(cadToNgnRate || '0');
+        currency = 'CAD';
+      } else {
+        throw new Error('Invalid currency pair');
+      }
+
+      const response = await fetch(`${API_URl}/wallet/fundswap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: amount,
+          rate: Math.round(rate),
+          currency: currency,
+          transactionPin: pin || code.join(''),
+        }),
+      });
+
+      if (response.ok) {
+        console.log(amount)
+        console.log(rate)
+        console.log(currency)
+        navigation.navigate('Exchange_4');
+      } else {
+        console.log(response);
+        setError(true);
+        Vibration.vibrate();
+      }
+    } catch (error) {
+      console.error('Error during fund swap:', error);
+      setError(true);
+      Vibration.vibrate();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuthentication = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to confirm transaction',
+        fallbackLabel: 'Use PIN',
+      });
+      if (result.success) {
+        // Biometric authentication successful
+        // Now, we need to get the stored PIN, decrypt it, and confirm it
+        const encryptedPin = await SecureStore.getItemAsync('userPin');
+        if (encryptedPin) {
+          const decryptedPin = decrypt(encryptedPin);
+          await handleContinue(decryptedPin);
+        } else {
+          console.error('No stored PIN found');
+          alert('An error occurred. Please try again or use your PIN.');
+        }
+      } else {
+        console.log('Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      alert('An error occurred during authentication. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      const biometricTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+        setBiometricType('faceId');
+      } else if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+        setBiometricType('fingerprint');
+      }
+    };
+
+    checkBiometricSupport();
+  }, []);
+
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.loadingContainer}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title_two}>Enter Transaction PIN</Text>
-            <Text style={styles.subtitle}>This is your unique 4 digit number.</Text>
-          </View>
+    <>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.loadingContainer}>
+            <View style={styles.contentContainer}>
+              <Text style={styles.title_two}>Enter Transaction PIN</Text>
+              <Text style={styles.subtitle}>This is your unique 4 digit number.</Text>
+            </View>
 
-          <View style={styles.inputCodeContainer}>
-            {code.map((digit, index) => (
-              <TextInput
-                key={index}
-                style={[styles.inputCode, error && styles.inputCodeError]}
-                value={digit}
-                onChangeText={(value) => handleInputChange(index, value)}
-                keyboardType="numeric"
-                maxLength={1}
-                secureTextEntry={true}  // This makes the input dots
+            <View style={styles.inputCodeContainer}>
+              {code.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={[styles.inputCode, error && styles.inputCodeError]}
+                  value={digit}
+                  onChangeText={(value) => handleInputChange(index, value)}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  secureTextEntry={true}
+                />
+              ))}
+            </View>
+            {error && <Text style={styles.errorMessage}>PIN Mismatch! Try again</Text>}
+
+            <View style={styles.buttonContainer}>
+              <CustomButton
+                width={163}
+                gradientColors={isCodeCorrect ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
+                title="Confirm"
+                onPress={() => handleContinue()}
+                textStyle={isCodeCorrect ? styles.buttonText : styles.buttonTextDisabled}
               />
-            ))}
-          </View>
-          {error && <Text style={styles.errorMessage}>PIN Mismatch! Try again</Text>}
+            </View>
 
-          <View style={styles.buttonContainer}>
-            <CustomButton
-              width={163}
-              gradientColors={isCodeComplete ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
-              title="Confirm"
-              onPress={() => {
-                if (isCodeComplete && isCodeCorrect) {
-                  navigation.navigate('Exchange_4');
-                }
-              }}
-              textStyle={isCodeComplete ? styles.buttonText : styles.buttonTextDisabled}
-            />
+            <View style={styles.dialPadContainer}>
+                <DialPad
+                    onPress={handleDialPadPress}
+                    biometricPress={handleAuthentication}
+                    biometricType={biometricType}
+                />
+            </View>
           </View>
-
-          <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+      {loading && <SpinnerOverlay />}
+    </>
   );
 };
 
@@ -136,13 +214,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  title: {
-    fontSize: 20,
-    color: 'black',
-    textAlign: 'center',
-    paddingBottom: 45,
-    marginTop: -7,
-  },
   title_two: {
     fontSize: 23,
     textAlign: 'center',
@@ -152,11 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'grey',
     textAlign: 'center',
-  },
-  subtitle_two: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 10,
   },
   inputCodeContainer: {
     flexDirection: 'row',
@@ -183,12 +249,6 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: '#999999',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 35,
-    left: 20,
-    zIndex: 1,
   },
   errorMessage: {
     color: '#EE4139',

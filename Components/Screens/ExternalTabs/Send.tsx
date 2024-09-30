@@ -9,7 +9,7 @@ const options = [
     title: 'Send CAD Through Interac Email',
     description: 'Easily send CAD to anyone with an interac email',
     image: require('../../../assets/MappleApp/send_Icon_1.png'),
-    page: 'Interac_1' as const,
+    page: 'Interac_2' as const,
   },
   {
     id: 2,
@@ -28,7 +28,7 @@ const options = [
 ];
 
 export default function Send() {
-  const navigation = useNavigation<ScreenNavigationProp<'Interac_1' | 'Bene_1' | 'wtwTransfer1'>>();
+  const navigation = useNavigation<ScreenNavigationProp<'Interac_2' | 'Bene_1' | 'wtwTransfer1'>>();
 
   return (
     <SafeAreaView style={styles.loadingContainer}>

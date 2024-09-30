@@ -111,7 +111,7 @@ const Change2 = () => {
           </View>
 
           <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+          <DialPad onPress={handleDialPadPress} biometricPress={undefined} biometricType={'none'} />
           </View>
         </View>
       </ScrollView>

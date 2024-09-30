@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
-import { ScreenNavigationProp } from '../../../navigation';
+import { ScreenNavigationProp, RootStackParamList } from '../../../navigation';
 
-const sections = [
+type SettingsProps = {
+  setIsUserLoggedIn: (loggedIn: boolean) => void;
+  setActiveToken: (token: string) => void;
+  setPinLoggedIn: (loggedIn: boolean) => void;
+};
+
+type SectionItem = {
+  image: any;
+  text: string;
+  navigateTo: keyof RootStackParamList;
+  rightIcon?: 'verified' | 'toggle1' | 'toggle2';
+};
+
+const sections: Array<{ title: string; items: SectionItem[] }> = [
   {
     title: 'ACCOUNT SETTINGS',
     items: [
@@ -27,37 +40,31 @@ const sections = [
     items: [
       { image: require('../../../assets/MappleApp/change_password.png'), text: 'Change Password', navigateTo: 'Pin' },
       { image: require('../../../assets/MappleApp/two_factor.png'), text: 'Two Factor Verification', navigateTo: 'AccountVerification', rightIcon: 'toggle2' },
-      { image: require('../../../assets/MappleApp/devices.png'), text: 'Devices and Sessions', navigateTo: 'Device' },
       { image: require('../../../assets/MappleApp/change_pin.png'), text: 'Change your Pin', navigateTo: 'Change' },
-      { image: require('../../../assets/MappleApp/change_pin.png'), text: 'Logout', navigateTo: 'Logout'  },
+      { image: require('../../../assets/MappleApp/change_pin.png'), text: 'Logout', navigateTo: 'SignIn' },
     ]
   },
 ];
 
-
-import { RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-
-type RootStackParamList = {
-  Settings: {setIsUserLoggedIn: (loggedIn: boolean) => void };
-
-};
-
-
-type ReturningScreenRouteProp = RouteProp<RootStackParamList, 'Settings'>
-
-
-const Settings = ({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) => {
-  const navigation = useNavigation<ScreenNavigationProp<'Profile' | 'Verification_01' | 'notification' | 'RateAlerts' | 'Transaction' | 'Pin' | 'AccountVerification' | 'Device' | 'Change'>>();
+const Settings: React.FC<SettingsProps> = ({ setIsUserLoggedIn, setActiveToken, setPinLoggedIn }) => {
+  const navigation = useNavigation<ScreenNavigationProp<keyof RootStackParamList>>();
   const [isSwitchOn1, setIsSwitchOn1] = useState(false);
   const [isSwitchOn2, setIsSwitchOn2] = useState(false);
   const [loading, setLoading] = useState(false);
-  // const route = useRoute<ReturningScreenRouteProp>();
-  // const {setIsUserLoggedIn } = route.params;
-  
 
+  useEffect(() => {
+    loadTwoFactorState();
+  }, []);
 
-// console.log(setIsUserLoggedIn)
+  const loadTwoFactorState = async () => {
+    try {
+      const twoFactorEnabled = await SecureStore.getItemAsync('twoFactorEnabled');
+      setIsSwitchOn2(twoFactorEnabled === 'true');
+    } catch (error) {
+      console.error('Error loading 2FA state:', error);
+    }
+  };
+
   const toggleSwitch1 = () => setIsSwitchOn1(previousState => !previousState);
 
   const toggleSwitch2 = async () => {
@@ -84,8 +91,10 @@ const Settings = ({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) => {
       const data = await response.json();
       if (response.ok) {
         Alert.alert('Success', data.message);
+        await SecureStore.setItemAsync('twoFactorEnabled', newValue.toString());
       } else {
         Alert.alert('Error', data.message || 'Unknown error');
+        setIsSwitchOn2(!newValue);
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -93,8 +102,29 @@ const Settings = ({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) => {
       } else {
         Alert.alert('Error', 'An unknown error occurred');
       }
+      setIsSwitchOn2(!newValue);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    console.log("logging out");
+    try {
+      await Promise.all([
+        SecureStore.deleteItemAsync('firstName'),
+        SecureStore.deleteItemAsync('lastName'),
+        SecureStore.deleteItemAsync('email'),
+        SecureStore.deleteItemAsync('token'),
+        SecureStore.deleteItemAsync('id'),
+      ]);
+      setIsUserLoggedIn(false);
+      setActiveToken("");
+      setPinLoggedIn(false);
+      navigation.navigate("SignIn");
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 
@@ -111,42 +141,24 @@ const Settings = ({setIsUserLoggedIn,setActiveToken,setPinLoggedIn}) => {
                     key={idx}
                     style={styles.row}
                     onPress={() => {
-                      if (item.navigateTo === 'Logout') {
-                        console.log("logging out")
-                      const clearUserInfo = async ()=>{
-                        await Promise.all([
-                          SecureStore.deleteItemAsync('firstName'),
-                          SecureStore.deleteItemAsync('lastName'),
-                          SecureStore.deleteItemAsync('email'),
-                          SecureStore.deleteItemAsync('token'),
-                          SecureStore.deleteItemAsync('id'),
-                        ]).then(() => {
-                          setIsUserLoggedIn(false);
-                          setActiveToken("")
-                          setPinLoggedIn(false)
-                          navigation.navigate("SignIn")
-
-                        });
-                      
+                      if (item.navigateTo === 'SignIn') {
+                        handleLogout();
+                        return;
                       }
-                      clearUserInfo();
-                      return;
-                      }
-                      navigation.navigate(item.navigateTo)
-                    
+                      navigation.navigate(item.navigateTo);
                     }}
                   >
                     <View style={styles.rowLeft}>
                       <Image source={item.image} style={styles.icon} />
                       <Text style={styles.rowText}>{item.text}</Text>
                     </View>
-                    {item.rightIcon && item.rightIcon === 'verified' && (
+                    {item.rightIcon === 'verified' && (
                       <Image source={require('../../../assets/MappleApp/Icon_1.png')} style={styles.rightIcon} />
                     )}
-                    {item.rightIcon && item.rightIcon === 'toggle1' && (
+                    {item.rightIcon === 'toggle1' && (
                       <Switch value={isSwitchOn1} onValueChange={toggleSwitch1} />
                     )}
-                    {item.rightIcon && item.rightIcon === 'toggle2' && (
+                    {item.rightIcon === 'toggle2' && (
                       <View style={styles.toggleContainer}>
                         <Switch value={isSwitchOn2} onValueChange={toggleSwitch2} />
                         {loading && <ActivityIndicator size="small" color="#0000ff" />}

@@ -1,19 +1,59 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import CustomButton from '../Assecories/CustomButton';
+import * as SecureStore from 'expo-secure-store';
 import { ScreenNavigationProp } from '../../../navigation';
 
-const summaryData = [
-  { label: 'Currency Pair', value: 'CAD - NGN' },
-  { label: 'Amount Tendered', value: '$10,000' },
-  { label: 'Amount to Receive', value: 'N8,000,000' },
-  { label: 'Exchange Rate', value: '1 CAD = N800' }
-];
-
 export default function Exchange_2() {
+  const [summaryData, setSummaryData] = useState([
+    { label: 'Currency Pair', value: '' },
+    { label: 'Amount Tendered', value: '' },
+    { label: 'Amount to Receive', value: '' },
+    { label: 'Exchange Rate', value: '' },
+  ]);
+
   const navigation = useNavigation<ScreenNavigationProp<'Exchange_3'>>();
+
+  useEffect(() => {
+    // Fetch data from SecureStore and calculate exchange details
+    async function calculateExchange() {
+      const selectedCurrency = await SecureStore.getItemAsync('fromCurrency');
+      const beneficiaryCurrency = await SecureStore.getItemAsync('toCurrency');
+      const cadAmount = await SecureStore.getItemAsync('fromAmount');
+      const ngnAmount = await SecureStore.getItemAsync('toAmount');
+      const cadToNgnRate = await SecureStore.getItemAsync('cadToNgnRate');
+      const ngnToCadRate = await SecureStore.getItemAsync('ngnToCadRate');
+
+      let exchangeRate = '';
+      let fromAmount = '';
+      let toAmount = '';
+      let currencyPair = '';
+
+      if (selectedCurrency === 'NGN' && beneficiaryCurrency === 'CAD') {
+        exchangeRate = `1 NGN = CAD ${ngnToCadRate}`;
+        currencyPair = 'NGN --> CAD';
+        fromAmount = `₦${ngnAmount}`;
+        toAmount = `$${cadAmount}`;
+      } else if (selectedCurrency === 'CAD' && beneficiaryCurrency === 'NGN') {
+        exchangeRate = `1 CAD = ₦${cadToNgnRate}`;
+        currencyPair = 'CAD --> NGN';
+        fromAmount = `$${cadAmount}`;
+        toAmount = `₦${ngnAmount}`;
+      }
+
+      // Update the summary data with the calculated values
+      setSummaryData([
+        { label: 'Currency Pair', value: currencyPair },
+        { label: 'Amount Tendered', value: fromAmount },
+        { label: 'Amount to Receive', value: toAmount },
+        { label: 'Exchange Rate', value: exchangeRate },
+      ]);
+    }
+
+    calculateExchange();
+  }, []);
 
   return (
     <SafeAreaView style={styles.loadingContainer}>
@@ -38,10 +78,10 @@ export default function Exchange_2() {
             <Text style={styles.valueText}>{item.value}</Text>
           </View>
         ))}
-        <View style={styles.row}>
+        {/* <View style={styles.row}>
           <Text style={styles.labelText}>Fee</Text>
           <Text style={styles.valueText}>$0.15</Text>
-        </View>
+        </View> */}
       </View>
 
       <View style={styles.buttonContainer}>

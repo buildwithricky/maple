@@ -89,7 +89,7 @@ const BVNverif = () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "BVN Verification OTP Sent",
-        body: `Your OTP is ${OTP} for phone number ${phoneNo}`,
+        body: `Your OTP has been sent to this phone number: ${phoneNo}`,
       },
       trigger: null,
     });

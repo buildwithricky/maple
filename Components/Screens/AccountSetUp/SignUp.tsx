@@ -19,11 +19,13 @@ import { useNavigation } from '@react-navigation/native';
 import AnimatedInput from '../Assecories/AnimatedInput';
 import * as SecureStore from 'expo-secure-store';
 import Checkbox from '../Assecories/Checkbox';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenNavigationProp } from '../../../navigation';
 import { API_URl } from '@env';
 import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 import useRefreshControl from '../../../RefreshControl';
+import { Ionicons } from '@expo/vector-icons';
+import DateOfBirthInput from './DatePicker';
 
 const SignUp = () => {
   const [firstName, setFirstName] = useState('');
@@ -157,7 +159,7 @@ const SignUp = () => {
     }
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     const currentDate = selectedDate || dateOfBirth;
     setShowDatePicker(false);
     setDateOfBirth(currentDate);
@@ -191,23 +193,13 @@ const SignUp = () => {
                 {renderInput("Password", password, setPassword)}
                 {renderInput("Phone", phone, setPhone)}
                 <View style={styles.contentContainer}>
-                <Text style={[styles.title, {marginLeft: "-75%", marginTop: 15}]}>Date Of Birth</Text>
-                  <TouchableOpacity
-                    onPress={() => setShowDatePicker(true)}
-                    style={styles.inputContainer}
-                  >
-                    <Text style={styles.inputText}>
-                      {dateOfBirth.toISOString().split('T')[0]}
-                    </Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={dateOfBirth}
-                      mode="date"
-                      display="default"
-                      onChange={handleDateChange}
-                    />
-                  )}
+                {/* <Text style={[styles.title, {marginLeft: "-75%", marginTop: 15}]}>Date Of Birth</Text> */}
+                <DateOfBirthInput
+                  dateOfBirth={dateOfBirth}
+                  setShowDatePicker={setShowDatePicker}
+                  showDatePicker={showDatePicker}
+                  handleDateChange={handleDateChange}
+                />
                   <Text style={[styles.title, {marginLeft: "-83%"}]}>Optional</Text>
                   {renderInput("Referrer", referrer, setReferrer)}
 

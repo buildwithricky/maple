@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Animated, TouchableWithoutFeedback, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
-
-interface Beneficiary {
-  accountNumber?: string;
-  AccountName?: string;
-  bankName?: string;
-  email?: string;
-  tag?: string;
-}
+import { Beneficiary } from './types';
 
 interface BottomSheetModalProps {
   isVisible: boolean;
@@ -18,6 +11,7 @@ interface BottomSheetModalProps {
   isInterac: boolean;
 }
 
+
 const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose, beneficiaries, onSelectBeneficiary, isInterac }) => {
   const [searchText, setSearchText] = useState('');
   const [filteredBeneficiaries, setFilteredBeneficiaries] = useState<Beneficiary[]>(beneficiaries);
@@ -26,7 +20,7 @@ const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
     setFilteredBeneficiaries(
       beneficiaries.filter((beneficiary) =>
         isInterac
-          ? beneficiary.email?.toLowerCase().includes(searchText.toLowerCase())
+          ? beneficiary.interacEmail?.toLowerCase().includes(searchText.toLowerCase())
           : beneficiary.accountNumber?.includes(searchText)
       )
     );
@@ -100,10 +94,10 @@ const BottomSheetModal8: React.FC<BottomSheetModalProps> = ({ isVisible, onClose
                         }}
                       >
                         <Text style={styles.beneficiaryText}>
-                          {isInterac ? beneficiary.email : beneficiary.AccountName}
+                          {isInterac ? beneficiary.nickname : beneficiary.AccountName}
                         </Text>
                         <Text style={styles.beneficiarySubText}>
-                          {isInterac ? beneficiary.tag : beneficiary.accountNumber}
+                          {isInterac ? beneficiary.interacEmail : beneficiary.accountNumber}
                         </Text>
                       </TouchableOpacity>
                     ))

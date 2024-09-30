@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, SafeAreaView, Image } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../navigation';
 import * as SecureStore from 'expo-secure-store';
+import img from './Notification.png'
 
 type NotificationDesRouteProp = RouteProp<RootStackParamList, 'NotificationDes'>;
 
@@ -33,7 +34,7 @@ const NotificationDes: React.FC<Props> = ({ route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Image source={notification.image} style={styles.image} />
+        <Image source={img} style={styles.image} />
         <Text style={styles.title}>{notification.title}</Text>
         <Text style={styles.description}>{notification.description}</Text>
         <Text style={styles.timestamp}>{new Date(notification.timestamp).toLocaleString()}</Text>
@@ -58,8 +59,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
       },
       image: {
-        width: 80,
-        height: 80,
+        width: 260,
+        height: 260,
         marginBottom: 20,
       },
       title: {

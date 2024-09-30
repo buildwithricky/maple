@@ -1,125 +1,271 @@
-import React, { useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, Image, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import AnimatedInput from '../Assecories/AnimatedInput';
 import CustomButton from '../Assecories/CustomButton';
+import { ScreenNavigationProp } from '../../../navigation';
+import AnimatedInput from '../Assecories/AnimatedInput';
+import * as SecureStore from 'expo-secure-store';
+import BottomSheetModal8 from '../Assecories/Modal/Modal8';
+import axios from 'axios';
+import { API_URl } from '@env';
+import { Beneficiary } from '../Assecories/Modal/types';
+
+const securityQuestions = [
+  "What was your childhood nickname?",
+  "What is the name of your first pet?",
+  "What is your mother's maiden name?",
+  "What was the make and model of your first car?"
+];
+
 
 export default function Interac_2() {
-  const navigation = useNavigation();
-  const [selectedCurrency, setSelectedCurrency] = useState('CAD');
-  const [showOptions, setShowOptions] = useState(false);
+  const navigation = useNavigation<ScreenNavigationProp<'Interac_3'>>();
+  const [cadAmount, setCadAmount] = useState('');
+  const [selectedQuestion, setSelectedQuestion] = useState('');
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [interactEmail, setInteractEmail] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [description, setDescription] = useState('');
+  const [cadBalance, setCadBalance] = useState('');
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
 
-  const handleCurrencySelect = (currency) => {
-    setSelectedCurrency(currency);
-    setShowOptions(false);
+  const handleSelectBeneficiary = (beneficiary: Beneficiary) => {
+    setInteractEmail(beneficiary.interacEmail || '');
+    setDescription(beneficiary.nickname || '');
   };
 
+  useEffect(() => {
+    const fetchBalances = async () => {
+      try {
+        const cad = await SecureStore.getItemAsync('CadBalance');
+        if (cad) setCadBalance(cad);
+      } catch (error) {
+        console.error('Error retrieving wallet balances:', error);
+      }
+    };
+
+    fetchBalances();
+    // Set up an interval to fetch balances every 5 seconds
+    const intervalId = setInterval(fetchBalances, 5000);
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (event) => {
+        setKeyboardOffset(event.endCoordinates.height);
+      }
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardOffset(0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  const handleQuestionSelect = (question: string) => {
+    setSelectedQuestion(question);
+    setShowQuestions(false);
+  };
+
+  const saveDataToSecureStore = async () => {
+    if (!cadAmount || !interactEmail || !selectedQuestion || !answer || !description) {
+      Alert.alert('Error', 'Please fill all fields before continuing.');
+      return;
+    }
+
+    try {
+      await SecureStore.setItemAsync('cadAmount', cadAmount);
+      await SecureStore.setItemAsync('interactEmail', interactEmail);
+      await SecureStore.setItemAsync('selectedQuestion', selectedQuestion);
+      await SecureStore.setItemAsync('answer', answer);
+      await SecureStore.setItemAsync('description', description);
+
+      console.log(cadAmount);
+      console.log(interactEmail);
+      console.log(selectedQuestion);
+      console.log(answer);
+      console.log(description);
+      
+      navigation.navigate('Interac_3');
+    } catch (error) {
+      console.error('Error saving data to SecureStore:', error);
+      Alert.alert('Error', 'Failed to save data. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    const fetchBeneficiaries = async () => {
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        if (token) {
+          const response = await axios.get(`${API_URl}/beneficiary/Interac`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.data.success) {
+            setBeneficiaries(response.data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching beneficiaries:', error);
+      }
+    };
+    fetchBeneficiaries();
+  }, []);
+
+  useEffect(() => {
+    const isValidAmount = parseFloat(cadAmount) > 0;
+    const isValidEmail = /\S+@\S+\.\S+/.test(interactEmail);
+    const isQuestionSelected = selectedQuestion !== '';
+    const isAnswerProvided = answer.trim() !== '';
+    const isDescriptionProvided = description.trim() !== '';
+  
+    setIsButtonDisabled(
+      !isValidAmount ||
+      !isValidEmail ||
+      !isQuestionSelected ||
+      !isAnswerProvided ||
+      !isDescriptionProvided
+    );
+  }, [cadAmount, interactEmail, selectedQuestion, answer, description]);
+
   return (
-    <SafeAreaView style={styles.loadingContainer}>
-
-      <View style={styles.outerContainer}>
-        <View style={styles.innerContainer}>
-          <View style={styles.amountContainer}>
-            <Text style={styles.amountText}>
-              <Text style={{ color: 'grey' }}>$</Text> 5,000
-            </Text>
-            <TouchableOpacity
-              style={styles.currencySelector}
-              onPress={() => setShowOptions(!showOptions)}
-            >
-              <Image
-                source={require('../../../assets/MappleApp/canada.png')}
-                style={styles.flagImage}
-              />
-              <Text style={styles.currencyText}>{selectedCurrency}</Text>
-              <Ionicons name="caret-down" size={16} color="grey" />
-            </TouchableOpacity>
-          </View>
-          {showOptions && (
-            <View style={styles.optionsContainer}>
-              <TouchableOpacity
-                style={styles.option}
-                onPress={() => handleCurrencySelect('CAD')}
-              >
-                <Image source={require('../../../assets/MappleApp/canada.png')} style={styles.flagImage} />
-                <Text style={styles.optionText}>CAD</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.option}
-                onPress={() => handleCurrencySelect('NIG')}
-              >
-                <Image source={require('../../../assets/MappleApp/Nigeria.png')} style={styles.flagImage} />
-                <Text style={styles.optionText}>NIG</Text>
-              </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={styles.loadingContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={keyboardOffset}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.outerContainer}>
+            <View style={styles.innerContainer}>
+              <View style={styles.amountContainer}>
+                <Text style={{ fontSize: 16, color: "#A4A6AA" }}>$</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  value={cadAmount}
+                  keyboardType="numeric"
+                  placeholder="5,000"
+                  onChangeText={(text) => {
+                    const formattedText = text.replace(/[^0-9]/g, '');
+                    setCadAmount(formattedText);
+                  }}
+                />
+                <TouchableOpacity style={styles.currencySelector}>
+                  <Image
+                    source={require('../../../assets/MappleApp/canada.png')}
+                    style={styles.flagImage}
+                  />
+                  <Text style={styles.currencyText}>CAD</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          )}
-        </View>
-        <View style={styles.walletContainer}>
-          <View style={styles.walletInfo}>
-            <Ionicons name="wallet" size={24} color="#0E314C" />
-            <Text style={styles.walletText}>Wallet Bal: </Text>
+            <View style={styles.walletContainer}>
+              <View style={styles.walletInfo}>
+                <Ionicons name="wallet" size={24} color="#0E314C" />
+                <Text style={styles.walletText}>Wallet Bal: </Text>
+              </View>
+              <Text style={styles.walletAmount}>{cadBalance}</Text>
+            </View>
           </View>
-          <Text style={styles.walletAmount}>$30,000.56</Text>
-        </View>
-      </View>
 
-      <View style={styles.secondOuterContainer}>
-        <View style={styles.innerContainer}>
-          <View style={styles.amountContainer}>
-            <Text style={styles.amountText}>
-              <Text style={{ color: 'grey' }}>$</Text> Ibekwe
+          <View style={styles.inputContainer}>
+            <AnimatedInput
+              placeholder="Interact Email"
+              value={interactEmail}
+              onChangeText={setInteractEmail}
+            />            
+          </View>
+
+          <View style={styles.innerContainers}>
+            <TouchableOpacity onPress={() => setShowQuestions(!showQuestions)} style={styles.dropdownContainer}>
+              <TextInput
+                style={styles.questionInput}
+                placeholder="Select a security question"
+                value={selectedQuestion}
+                editable={false}
+              />
+              <Ionicons name={showQuestions ? "chevron-up" : "chevron-down"} size={24} color="grey" />
+            </TouchableOpacity>
+
+            {showQuestions && (
+              <FlatList
+                data={securityQuestions}
+                keyExtractor={(item) => item}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.option} onPress={() => handleQuestionSelect(item)}>
+                    <Text>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
+
+          <View style={styles.inputContainerss}>
+            <AnimatedInput
+              placeholder="Security Question Answer"
+              value={answer}
+              onChangeText={setAnswer}
+            />  
+            <AnimatedInput
+              placeholder="Nick Name"
+              value={description}
+              onChangeText={setDescription}
+            />            
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text onPress={() => setModalVisible(true)} style={styles.input}>
+              Select Beneficiary
             </Text>
           </View>
-        </View>
-        <View style={styles.walletContainer}>
-          <View style={styles.walletInfo}>
-            <FontAwesome name="percent" size={16} color="#0E314C" />
-            <Text style={styles.walletText}>Transaction Fee: </Text>
-          </View>
-          <Text style={styles.walletAmount}>$0.00</Text>
-        </View>
-        <Text style={styles.interacEmailText}>Interac Email</Text>
-      </View>
 
-      <View style={styles.buttonContainer}>
-        <CustomButton
-          width={"100%"}
-          gradientColors={['#ee0979', '#ff6a00']}
-          title="Continue"
-          onPress={() => navigation.navigate('Interac_3')}
-        />
-      </View>
-    </SafeAreaView>
+          <View style={styles.buttonContainer}>
+            <CustomButton
+              width={"100%"}
+              gradientColors={['#ee0979', '#ff6a00']}
+              title="Continue"
+              onPress={saveDataToSecureStore}
+              disabled={isButtonDisabled}
+            />
+          </View>
+
+          <BottomSheetModal8
+            isVisible={isModalVisible}
+            onClose={() => setModalVisible(false)}
+            beneficiaries={beneficiaries}
+            onSelectBeneficiary={handleSelectBeneficiary}
+            isInterac={true}
+          />
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
+  },
+  container: {
+    flex: 1,
     marginTop: '8%',
     marginHorizontal: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  goBackButton: {
-    position: 'absolute',
-    left: 0,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  line: {
-    height: 1,
-    backgroundColor: '#00000032',
-    marginBottom: 20,
   },
   outerContainer: {
     backgroundColor: '#d1d1d157',
@@ -128,68 +274,29 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     paddingTop: 1,
   },
-  secondOuterContainer: {
-    backgroundColor: '#d1d1d157',
-    borderRadius: 15,
-    paddingBottom: 20,
-    paddingTop: 1,
-    marginBottom: 13,
-    position: 'relative',
-  },
   innerContainer: {
     backgroundColor: 'white',
     borderRadius: 15,
     padding: 20,
     marginBottom: 10,
   },
+  innerContainers:{
+    backgroundColor: 'transparent',
+    padding: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 12,
+  },
   amountContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  amountText: {
+  amountInput: {
     fontSize: 18,
     color: '#0E314C',
-  },
-  currencySelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff3d',
-    borderRadius: 10,
-    padding: 10,
-    paddingVertical: 5,
-  },
-  flagImage: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 5,
-  },
-  currencyText: {
-    color: '#0E314C',
-    marginRight: 5,
-  },
-  optionsContainer: {
-    position: 'absolute',
-    right: 0,
-    top: 40,
-    backgroundColor: '#f1f1f1ff',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
-    zIndex: 1,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-  },
-  optionText: {
-    marginLeft: 10,
+    width: '68%',
   },
   walletContainer: {
     flexDirection: 'row',
@@ -211,6 +318,11 @@ const styles = StyleSheet.create({
     color: '#0E314C',
     fontSize: 17,
   },
+  amountTextInput: {
+    fontSize: 18,
+    color: '#0E314C',
+    width: '94%',
+  },
   interacEmailText: {
     position: 'absolute',
     top: -10,
@@ -219,24 +331,66 @@ const styles = StyleSheet.create({
     color: '#0E314C',
     fontSize: 16,
   },
-  inputContainer: {
-    alignItems: 'center',
-    marginBottom: 3,
-  },
-  textInput: {
-    height: 40,
-    color: '#0E314C',
-  },
-  placeholder: {
-    position: 'absolute',
-    left: 15,
-    color: '#0E314C',
-  },
   buttonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 20,
     justifyContent: 'center',
     marginBottom: 13,
+  },
+  dropdownContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  questionInput: {
+    fontSize: 16,
+    color: '#0E314C',
+    width: '90%',
+  },
+  option: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+  },
+  inputContainer: {
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: 13,
+  },
+  inputContainerss: {
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: 13,
+  },
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  flagImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  currencyText: {
+    fontSize: 16,
+    color: '#0E314C',
+  },
+  input: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 12,
+    padding: 10,
+    fontSize: 16,
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    color: "#aaa"
   },
 });

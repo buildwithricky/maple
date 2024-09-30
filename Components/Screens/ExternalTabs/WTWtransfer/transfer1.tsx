@@ -53,7 +53,7 @@ export default function Transfer1() {
   useEffect(() => {
     const fetchBalances = async () => {
       try {
-        const cad = await SecureStore.getItemAsync('cadBalance');
+        const cad = await SecureStore.getItemAsync('CadBalance');
         const ngn = await SecureStore.getItemAsync('walletBalance');
         if (cad) setCadBalance(cad);
         if (ngn) setNgnBalance(ngn);
@@ -63,6 +63,10 @@ export default function Transfer1() {
     };
 
     fetchBalances();
+    // Set up an interval to fetch balances every 5 seconds
+    const intervalId = setInterval(fetchBalances, 5000);
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleContinue = async () => {
@@ -149,7 +153,7 @@ export default function Transfer1() {
                 <Ionicons name="wallet" size={24} color="#0E314C" />
                 <Text style={styles.walletText}>Wallet Bal: </Text>
               </View>
-              <Text style={styles.walletAmount}>{selectedCurrency === 'CAD' ? `$${cadBalance}` : `${ngnBalance}`}</Text>
+              <Text style={styles.walletAmount}>{selectedCurrency === 'CAD' ? `${cadBalance}` : `${ngnBalance}`}</Text>
             </View>
           </View>
 
@@ -210,7 +214,7 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     fontSize: 18,
-    color: 'grey',
+    color: 'black',
     marginRight: 30,
     padding: 5,
     width: "60%"

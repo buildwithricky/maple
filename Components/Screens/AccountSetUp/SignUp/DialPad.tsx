@@ -1,19 +1,32 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import faceIdIcon from './faceIdIcon.png';
 
 interface DialPadProps {
   onPress: (value: string) => void;
-  fingerprintPress?: () => void; // Optional prop
+  biometricPress?: () => void;
+  biometricType: 'none' | 'fingerprint' | 'faceId';
 }
 
-const DialPad: React.FC<DialPadProps> = ({ onPress, fingerprintPress }) => {
+const DialPad: React.FC<DialPadProps> = ({ onPress, biometricPress, biometricType }) => {
   const buttons = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
-    [fingerprintPress ? 'Fingerprint' : '', '0', 'Del'],
+    [biometricType !== 'none' ? 'Biometric' : '', '0', 'Del'],
   ];
+
+  const renderBiometricIcon = () => {
+    switch (biometricType) {
+      case 'fingerprint':
+        return <Ionicons name="finger-print" size={32} color="#EE0979" />;
+      case 'faceId':
+        return <Image source={faceIdIcon} style={{ width: 32, height: 32 }} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,15 +38,15 @@ const DialPad: React.FC<DialPadProps> = ({ onPress, fingerprintPress }) => {
               style={[
                 styles.button,
                 button === '' && styles.emptyButton,
-                button === 'Fingerprint' && styles.fingerprintButton
+                button === 'Biometric' && styles.biometricButton
               ]}
-              onPress={() => button === 'Fingerprint' ? fingerprintPress && fingerprintPress() : onPress(button)}
+              onPress={() => button === 'Biometric' ? biometricPress && biometricPress() : onPress(button)}
               disabled={button === ''}
             >
               {button === 'Del' ? (
                 <Ionicons name="backspace" size={24} color="black" />
-              ) : button === 'Fingerprint' ? (
-                <Ionicons name="finger-print" size={32} color="#EE0979" />
+              ) : button === 'Biometric' ? (
+                renderBiometricIcon()
               ) : (
                 button !== '' && <Text style={styles.buttonText}>{button}</Text>
               )}
@@ -69,8 +82,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 24,
   },
-  fingerprintButton: {
-    // marginTop: 20,
+  biometricButton: {
     justifyContent: 'center',
     alignItems: 'center',
   },

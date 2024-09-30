@@ -53,7 +53,7 @@ const EmailVerif2 = () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Phone Number Verification OTP Sent",
-        body: `Your OTP is ${OTP} for phone number ${phoneNo}`,
+        body: `Your OTP has been sent to this phone number: ${phoneNo}`,
       },
       trigger: null,
     });

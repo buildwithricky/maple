@@ -80,6 +80,31 @@ const TransactionDetail: React.FC<TransactionDetailProps> = ({ route }) => {
     </View>
   );
 
+  const formatTransactionHeader = (transaction: TransactionDetailProps['route']['params']['transaction']) => {
+    if (transaction.type === "FundSwap") {
+      if (transaction.sourceCurrency === "CAD" && transaction.destinationCurrency === "NGN") {
+        return (
+          <>
+            <Text style={styles.amount}>CAD {transaction.sourceAmount?.toLocaleString()} → NGN {transaction.destinationAmount?.toLocaleString()}</Text>
+            <Text style={styles.conversionText}>CAD → NGN</Text>
+          </>
+        );
+      } else if (transaction.sourceCurrency === "NGN" && transaction.destinationCurrency === "CAD") {
+        return (
+          <>
+            <Text style={styles.amount}>NGN {transaction.sourceAmount?.toLocaleString()} → CAD {transaction.destinationAmount?.toLocaleString()}</Text>
+            <Text style={styles.conversionText}>NGN → CAD</Text>
+          </>
+        );
+      }
+    }
+    
+    // Default case for other transaction types or currency pairs
+    return (
+      <Text style={styles.amount}>{transaction.sourceCurrency} {transaction.destinationAmount?.toLocaleString()}</Text>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -89,7 +114,7 @@ const TransactionDetail: React.FC<TransactionDetailProps> = ({ route }) => {
               <Text style={[styles.headerStatus, { color: getStatusColor(transaction.status) }]}>
                 {transaction.status?.toUpperCase()}
               </Text>
-              <Text style={styles.amount}>NGN {transaction.destinationAmount?.toLocaleString()}</Text>
+              {formatTransactionHeader(transaction)}
               <Text style={styles.date}>{new Date(transaction.createdAt!).toLocaleString()}</Text>
             </View>
 
@@ -100,14 +125,14 @@ const TransactionDetail: React.FC<TransactionDetailProps> = ({ route }) => {
               {renderDetailItem('Type', transaction.type)}
               {renderDetailItem('Source Currency', transaction.sourceCurrency)}
               {renderDetailItem('Destination Currency', transaction.destinationCurrency)}
-              {renderDetailItem('Source Amount', `NGN ${transaction.sourceAmount?.toLocaleString()}`)}
-              {renderDetailItem('Destination Amount', `NGN ${transaction.destinationAmount?.toLocaleString()}`)}
+              {renderDetailItem('Source Amount', ` ${transaction.sourceAmount?.toLocaleString()}`)}
+              {renderDetailItem('Destination Amount', ` ${transaction.destinationAmount?.toLocaleString()}`)}
               {renderDetailItem('Description', transaction.description)}
-              {renderDetailItem('Fee', transaction.fee ? `NGN ${transaction.fee}` : 'Free')}
-              {renderDetailItem('Total Amount Sent', `NGN ${transaction.amountSent?.toLocaleString()}`)}
+              {renderDetailItem('Fee', transaction.fee ? `${transaction.sourceCurrency} ${transaction.fee}` : 'Free')}
+              {renderDetailItem('Total Amount Sent', `${transaction.sourceCurrency} ${transaction.amountSent?.toLocaleString()}`)}
               {renderDetailItem('Reference', transaction.reference)}
-              {renderDetailItem('Pre Amount', `NGN ${transaction.preAmount?.toLocaleString()}`)}
-              {renderDetailItem('Post Amount', `NGN ${transaction.postAmount?.toLocaleString()}`)}
+              {renderDetailItem('Pre Amount', `${transaction.sourceCurrency} ${transaction.preAmount?.toLocaleString()}`)}
+              {renderDetailItem('Post Amount', `${transaction.sourceCurrency} ${transaction.postAmount?.toLocaleString()}`)}
             </View>
           </View>
         </ViewShot>
@@ -180,6 +205,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginHorizontal: 15,
     marginBottom: 20,
+  },
+  conversionText: {
+    fontSize: 16,
+    color: '#666666',
+    marginTop: 5,
   },
 });
 

@@ -160,7 +160,7 @@ const SignIn: React.FC<SignInProps> = ({ setIsUserLoggedIn }) => {
                   source={require('../../../assets/MappleApp/logo.png')}
                   style={styles.image}
                 />
-                <Text style={styles.title}>Welcome Back: Sign in</Text>
+                <Text style={styles.title}>Welcome: Sign in</Text>
                 <Text style={styles.subtitle}>
                   Thank you for joining Maple. You are almost ready to go.
                 </Text>
@@ -194,10 +194,10 @@ const SignIn: React.FC<SignInProps> = ({ setIsUserLoggedIn }) => {
               <View style={styles.textContainer}>
                 <Text style={styles.mainText}>
                   Forgotten Password?{' '}
+                </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('Reset')}>
                     <Text style={styles.linkText}>Reset Now</Text>
                   </TouchableOpacity>
-                </Text>
               </View>
 
               <View style={styles.buttonContainer}>
@@ -212,10 +212,10 @@ const SignIn: React.FC<SignInProps> = ({ setIsUserLoggedIn }) => {
               <View style={styles.textContainer}>
                 <Text style={styles.mainText}>
                   Don't have an account?{' '}
+                </Text>
                   <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.linkText}>Register Now</Text>
                   </TouchableOpacity>
-                </Text>
               </View>
             </SafeAreaView>
           </TouchableWithoutFeedback>
@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontWeight: 'bold',
     color: 'red',
-    marginTop: 20
   },
   contentContainer: {
     alignItems: 'center',
@@ -289,6 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     marginVertical: 20,
+    alignItems: "center"
   },
 });
 

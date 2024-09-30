@@ -1,53 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   SafeAreaView,
   Vibration,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
-import DialPad from '../AccountSetUp/SignUp/DialPad';
-import CustomButton from '../../Screens/Assecories/CustomButton';
+import * as SecureStore from 'expo-secure-store';
 import { ScreenNavigationProp } from '../../../navigation';
+import CustomButton from '../../Screens/Assecories/CustomButton';
+import DialPad from '../AccountSetUp/SignUp/DialPad';
+import SpinnerOverlay from '../../Screens/Assecories/SpinnerOverlay';
+import { API_URl } from '@env';
+import { decrypt } from '../../../utils/Encryp';
 
-const correctCode = ['1', '2', '3', '4']; // Example correct code
-
-const Interac_4 = () => {
+const InteracTransfer = () => {
   const navigation = useNavigation<ScreenNavigationProp<'Interac_5'>>();
   const [code, setCode] = useState(['', '', '', '']);
-  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [biometricType, setBiometricType] = useState<'none' | 'fingerprint' | 'faceId'>('none');
   const [error, setError] = useState(false);
-  const [isCodeCorrect, setIsCodeCorrect] = useState(false);
+  const [transactionData, setTransactionData] = useState({
+    amount: 0,
+    securityQuestion: '',
+    securityQuestionAnswer: '',
+    description: '',
+    transactionPin: '',
+    email: '',
+    currency: '',
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const storedCadAmount = await SecureStore.getItemAsync('cadAmount');
+        const storedInteractEmail = await SecureStore.getItemAsync('interactEmail');
+        const storedSelectedQuestion = await SecureStore.getItemAsync('selectedQuestion');
+        const storedAnswer = await SecureStore.getItemAsync('answer');
+        const storedDescription = await SecureStore.getItemAsync('description');
+
+        setTransactionData({
+          amount: storedCadAmount ? parseFloat(storedCadAmount) : 0,
+          email: storedInteractEmail || '',
+          securityQuestion: storedSelectedQuestion || '',
+          securityQuestionAnswer: storedAnswer || '',
+          description: storedDescription || '',
+          transactionPin: '',
+          currency: 'CAD',
+        });
+
+        // Check for biometric capabilities
+        const biometricTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          setBiometricType('faceId');
+        } else if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          setBiometricType('fingerprint');
+        }
+      } catch (error) {
+        console.error('Error retrieving stored data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleInputChange = (index: number, value: string) => {
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
-
-    // Check if all code inputs are filled
-    if (newCode.every(digit => digit !== '')) {
-      setLoading(true);
-      // Simulate a network request
-      setTimeout(() => {
-        setLoading(false);
-        if (newCode.join('') === correctCode.join('')) {
-          setIsCodeCorrect(true); // Enable the button
-        } else {
-          // Set error state if code is incorrect
-          setError(true);
-          Vibration.vibrate();
-        }
-      }, 3000); // Show spinner for 3 seconds
-    } else {
-      setError(false); // Reset error state if not all inputs are filled
-    }
   };
 
   const handleDialPadPress = (value: string) => {
@@ -64,73 +89,117 @@ const Interac_4 = () => {
     }
   };
 
-  const handleFingerprintLogin = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    if (!hasHardware) {
-      alert('This device does not have a fingerprint scanner.');
-      return;
-    }
-
-    const biometricRecords = await LocalAuthentication.isEnrolledAsync();
-    if (!biometricRecords) {
-      alert('No fingerprints are registered. Please register a fingerprint.');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync();
-    if (result.success) {
-      navigation.navigate('Homepage');
-    } else {
-      alert('Fingerprint authentication failed. Please try again.');
+  const handleAuthentication = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to confirm transaction',
+        fallbackLabel: 'Use PIN',
+      });
+      if (result.success) {
+        // Biometric authentication successful
+        const encryptedPin = await SecureStore.getItemAsync('transactionPin');
+        if (encryptedPin) {
+          const decryptedPin = decrypt(encryptedPin); // Implement this function
+          await handleConfirmPress(decryptedPin);
+        } else {
+          console.error('No stored PIN found');
+          Alert.alert('Error', 'No stored PIN found. Please use your PIN to authenticate.');
+        }
+      } else {
+        console.log('Biometric authentication failed');
+        Alert.alert('Authentication Failed', 'Please try again or use your PIN.');
+      }
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      Alert.alert('Error', 'An error occurred during authentication. Please try again.');
     }
   };
 
   const isCodeComplete = code.every(digit => digit !== '');
 
+  const handleConfirmPress = async (pin?: string) => {
+    if (isCodeComplete || pin) {
+      setLoading(true);
+      const enteredPin = pin || code.join('');
+      try {
+        const token = await SecureStore.getItemAsync('token');
+        const response = await fetch(`${API_URl}/wallet/interac-transfer`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ...transactionData,
+            transactionPin: enteredPin,
+          }),
+        });
+        const data = await response.json();
+        setLoading(false);
+        if (data.success) {
+          Alert.alert('Success', data.message, [
+            { text: 'OK', onPress: () => navigation.navigate('Interac_5') }
+          ]);
+        } else {
+          Alert.alert('Error', data.message);
+          setError(true);
+          Vibration.vibrate();
+        }
+      } catch (error) {
+        setLoading(false);
+        Alert.alert('Error', 'An error occurred. Please try again.');
+        console.error('Error during transfer:', error);
+      }
+    }
+  };
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.loadingContainer}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title_two}>Enter Transaction PIN</Text>
-            <Text style={styles.subtitle}>This is your unique 4 digit number.</Text>
-          </View>
+    <>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.container}>
+          <View style={styles.loadingContainer}>
+            <View style={styles.contentContainer}>
+              <Text style={styles.title_two}>Enter Transaction PIN</Text>
+              <Text style={styles.subtitle}>This is your unique 4 digit number.</Text>
+            </View>
 
-          <View style={styles.inputCodeContainer}>
-            {code.map((digit, index) => (
-              <TextInput
-                key={index}
-                style={[styles.inputCode, error && styles.inputCodeError]}
-                value={digit}
-                onChangeText={(value) => handleInputChange(index, value)}
-                keyboardType="numeric"
-                maxLength={1}
-                secureTextEntry={true}  // This makes the input dots
+            <View style={styles.inputCodeContainer}>
+              {code.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={[styles.inputCode, error && styles.inputCodeError]}
+                  value={digit}
+                  onChangeText={(value) => handleInputChange(index, value)}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  secureTextEntry={true}
+                />
+              ))}
+            </View>
+            {error && <Text style={styles.errorMessage}>PIN Mismatch! Try again</Text>}
+
+            <View style={styles.buttonContainer}>
+              <CustomButton
+                width={163}
+                gradientColors={isCodeComplete ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
+                title="Confirm"
+                onPress={() => handleConfirmPress()}
+                textStyle={isCodeComplete ? styles.buttonText : styles.buttonTextDisabled}
               />
-            ))}
-          </View>
-          {error && <Text style={styles.errorMessage}>PIN Mismatch! Try again</Text>}
+            </View>
 
-          <View style={styles.buttonContainer}>
-            <CustomButton
-              width={163}
-              gradientColors={isCodeComplete ? ['#ee0979', '#ff6a00'] : ['#CCCCCC', '#CCCCCC']}
-              title="Confirm"
-              onPress={() => {
-                if (isCodeComplete && isCodeCorrect) {
-                  navigation.navigate('Interac_5');
-                }
-              }}
-              textStyle={isCodeComplete ? styles.buttonText : styles.buttonTextDisabled}
-            />
+            <View style={styles.dialPadContainer}>
+              <DialPad
+                onPress={handleDialPadPress}
+                biometricPress={handleAuthentication}
+                biometricType={biometricType}
+              />
+            </View>
           </View>
-
-          <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={handleFingerprintLogin} />
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+      {loading && <SpinnerOverlay />}
+    </>
   );
 };
 
@@ -151,13 +220,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  title: {
-    fontSize: 20,
-    color: 'black',
-    textAlign: 'center',
-    paddingBottom: 45,
-    marginTop: -7,
-  },
   title_two: {
     fontSize: 23,
     textAlign: 'center',
@@ -167,11 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: 'grey',
     textAlign: 'center',
-  },
-  subtitle_two: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 10,
   },
   inputCodeContainer: {
     flexDirection: 'row',
@@ -196,14 +253,8 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
   },
-  buttonTextDisabled: {
+    buttonTextDisabled: {
     color: '#999999',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 35,
-    left: 20,
-    zIndex: 1,
   },
   errorMessage: {
     color: '#EE4139',
@@ -218,4 +269,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Interac_4;
+export default InteracTransfer;

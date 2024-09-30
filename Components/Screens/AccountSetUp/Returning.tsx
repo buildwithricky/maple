@@ -20,6 +20,7 @@ import { API_URl } from '@env';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import SpinnerOverlay from '../Assecories/SpinnerOverlay';
+import { decrypt } from '../../../utils/Encryp';
 
 type RootStackParamList = {
   Returning: { pinLoggedIn: boolean; setPinLoggedIn: (loggedIn: boolean) => void };
@@ -38,6 +39,7 @@ const Returning = () => {
   const [loading, setLoading] = useState(false);
   const [pinError, setPinError] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null); 
+  const [biometricType, setBiometricType] = useState<'none' | 'fingerprint' | 'faceId'>('none');
 
   const route = useRoute<ReturningScreenRouteProp>();
   const { pinLoggedIn, setPinLoggedIn } = route.params;
@@ -90,7 +92,7 @@ const Returning = () => {
   const confirmPin = async (pin: string) => {
     setLoading(true);
     setPinError(false);
-    console.log(`Sending PIN: ${pin}`); // Log the PIN being sent
+    console.log(`Sending PIN: ${pin}`);
     try {
       const token = await SecureStore.getItemAsync('token');
       const response = await fetch(`${API_URl}/user/confirm-pin`, {
@@ -103,10 +105,11 @@ const Returning = () => {
       });
 
       const responseData = await response.json();
-      console.log('Response:', responseData); // Log the response
+      console.log('Response:', responseData);
 
       if (responseData.success) {
         setPinLoggedIn(true);
+        console.log(token);
         navigation.navigate('Homepage');
       } else {
         setPinError(true);
@@ -133,26 +136,29 @@ const Returning = () => {
     }
   };
 
-  const handleFingerprintLogin = async () => {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    if (!hasHardware) {
-      alert('This device does not have a fingerprint scanner.');
-      return;
-    }
-
-    const biometricRecords = await LocalAuthentication.isEnrolledAsync();
-    if (!biometricRecords) {
-      alert('No fingerprints are registered. Please register a fingerprint.');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync();
-    if (result.success) {
-      navigation.navigate('Homepage');
-    } else {
-      alert('Fingerprint authentication failed. Please try again.');
+  const handleAuthentication = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync();
+      if (result.success) {
+        // Biometric authentication successful
+        // Now, we need to get the stored PIN and confirm it
+        const encryptedPin = await SecureStore.getItemAsync('userPin');
+        if (encryptedPin) {
+          const decryptedPin = decrypt(encryptedPin);
+          await confirmPin(decryptedPin);
+        } else {
+          console.error('No stored PIN found');
+          alert('An error occurred. Please try again or use your PIN.');
+        }
+      } else {
+        console.log('Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      alert('An error occurred during authentication. Please try again.');
     }
   };
+
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -171,6 +177,20 @@ const Returning = () => {
     fetchNames();
   }, []);
 
+  useEffect(() => {
+    const checkBiometricSupport = async () => {
+      const biometricTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+        setBiometricType('faceId');
+      } else if (biometricTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+        setBiometricType('fingerprint');
+      }
+    };
+
+    checkBiometricSupport();
+  }, []);
+
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -181,13 +201,14 @@ const Returning = () => {
               style={styles.image}
             />
             <Text style={styles.title}>
-              Welcome Back, <Text style={styles.title_two}>{firstName} {lastName}</Text>
+              Welcome Back 
             </Text>
+              <Text style={styles.title_two}>{firstName}</Text>
             <Text style={styles.mainText}>
               Not {firstName}?{' '}
-              <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
+              {/* <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
                 <Text style={styles.linkText}>Sign Out</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </Text>
           </View>
 
@@ -215,7 +236,11 @@ const Returning = () => {
           </Text>
 
           <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={handleFingerprintLogin} />
+            <DialPad
+                onPress={handleDialPadPress}
+                biometricPress={handleAuthentication}
+                biometricType={biometricType}
+              />
             {loading && <SpinnerOverlay />}
           </View>
         </View>

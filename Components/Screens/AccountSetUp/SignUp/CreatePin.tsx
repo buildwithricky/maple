@@ -15,6 +15,7 @@ import { ScreenNavigationProp } from '../../../../navigation';
 import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
 import SpinnerOverlay from '../../Assecories/SpinnerOverlay';
+import { encrypt } from '../../../../utils/Encryp';
 
 const CreatePin = () => {
   const navigation = useNavigation<ScreenNavigationProp<'CreatePin3'>>();
@@ -59,11 +60,14 @@ const CreatePin = () => {
         const pin = code.join('');
         const userId = await SecureStore.getItemAsync('userID');
         console.log(userId)
-        
         if (!userId) {
           throw new Error('User ID not found');
         }
 
+        // Encrypt the PIN before storing
+        const encryptedPin = encrypt(pin);
+        // Store the encrypted PIN in SecureStore
+        await SecureStore.setItemAsync('userPin', encryptedPin);
         const response = await fetch(`${API_URl}/user/create-pin`, {
           method: 'POST',
           headers: {
@@ -71,9 +75,7 @@ const CreatePin = () => {
           },
           body: JSON.stringify({ pin, userId }),
         });
-
         const data = await response.json();
-
         if (data.success) {
           navigation.navigate('CreatePin3');
         } else {
@@ -125,7 +127,7 @@ const CreatePin = () => {
           </View>
 
           <View style={styles.dialPadContainer}>
-            <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+            <DialPad onPress={handleDialPadPress} biometricPress={undefined} biometricType={'none'} />
             {loading && <SpinnerOverlay />}
           </View>
         </View>

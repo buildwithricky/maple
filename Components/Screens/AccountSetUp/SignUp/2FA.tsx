@@ -168,7 +168,7 @@ const TwoFA: React.FC<SignInProps> = ({ setIsUserLoggedIn }) => {
             </TouchableOpacity>
             
             <View style={styles.dialPadContainer}>
-              <DialPad onPress={handleDialPadPress} fingerprintPress={undefined} />
+            <DialPad onPress={handleDialPadPress} biometricPress={undefined} biometricType={'none'} />
               {loading && <SpinnerOverlay />}
             </View>
           </View>

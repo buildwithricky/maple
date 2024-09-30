@@ -127,7 +127,7 @@ const EmailVerif3 = () => {
         </TouchableOpacity>
         
         <View style={styles.dialPadContainer}>
-          <DialPad onPress={handleDialPadPress} />
+          <DialPad onPress={handleDialPadPress} biometricPress={undefined} biometricType={'none'} />
           {loading && <SpinnerOverlay />}
         </View>
       </SafeAreaView>

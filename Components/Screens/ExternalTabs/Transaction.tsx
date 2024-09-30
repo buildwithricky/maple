@@ -1,43 +1,35 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Modal7 from '../../../Components/Screens/Assecories/Modal/Modal7';
 
 const Transaction = () => {
   const navigation = useNavigation();
-  const [isModalVisible, setModalVisible] = useState(true);
-
-  const handleModalClose = () => {
-    setModalVisible(false);
-  };
-
-  const handleVerifyAccount = () => {
-    setModalVisible(false);
-    navigation.navigate('settings');
-  };
-
+  const accounts = [
+    { name: 'Canadian Dollar', flag: '🇨🇦', subtitle: 'Account number, IBAN', screen: 'CADLimits' },
+    { name: 'Nigerian Naira', flag: '🇳🇬', subtitle: 'Account number', screen: 'NGNLimits' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" style={styles.backArrow} />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>Transaction Limit</Text>
-        <View style={{ width: 24 }} /> 
-      </View>
-      <Modal7 
-        isVisible={isModalVisible}
-        onClose={handleModalClose}
-        onVerifyAccount={handleVerifyAccount}
-      />
+      <Text style={styles.subheader}>Choose account to see send and receive limit</Text>
+      <ScrollView style={styles.accountList}>
+        {accounts.map((account, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.accountItem}
+            onPress={() => navigation.navigate(account.screen)}
+          >
+            <View style={styles.flagContainer}>
+              <Text style={styles.flag}>{account.flag}</Text>
+            </View>
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountName}>{account.name}</Text>
+              {account.subtitle && <Text style={styles.accountSubtitle}>{account.subtitle}</Text>}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -45,22 +37,56 @@ const Transaction = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'white',
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 16
   },
-  backArrow: {
-    marginRight: 10,
-  },
-  headerText: {
-    flex: 1,
-    textAlign: 'center',
+  headerTitle: {
     fontSize: 18,
-    color: 'grey',
     fontWeight: 'bold',
+  },
+  subheader: {
+    fontSize: 14,
+    color: '#666',
+    padding: 16,
+    paddingTop: 8,
+    textAlign: "center"
+  },
+  accountList: {
+    flex: 1,
+  },
+  accountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16
+  },
+  flagContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  flag: {
+    fontSize: 24,
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  accountSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
 });
 

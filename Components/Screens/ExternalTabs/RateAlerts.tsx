@@ -14,6 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 import { API_URl } from '@env';
 import CanadianFlag from '../../../assets/MappleApp/canada.png';
 import NigeriaFlag from '../../../assets/MappleApp/Nigeria.png';
+import SpinnerOverlay from '../Assecories/SpinnerOverlay';
 
 interface Rate {
   _id: string;
@@ -69,7 +70,7 @@ const RateAlerts = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {loading ? (
-        <ActivityIndicator size="large" color="#ff6a00" />
+        <SpinnerOverlay />
       ) : (
         rates.map((rate) => {
           const isCADtoNGN = rate.exchange === 'CAD-TO-NGN';

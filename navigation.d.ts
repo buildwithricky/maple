@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Reset4: undefined;
   Reset5: undefined;
   Transactions: undefined;
+  Transaction: undefined;
   notification: undefined;
   Verification_01: undefined;
   Home: undefined;
@@ -44,10 +45,13 @@ export type RootStackParamList = {
   AccountVerification3: undefined;
   Interac_1: undefined;
   Interac_2: undefined;
+  Interac_3: undefined;
+  Interac_4: undefined;
   Interac_5: undefined;
   Bene_1: undefined;
   Bene_2: undefined;
   Bene_3: undefined;
+  Bene_4: undefined;
   New_1: undefined;
   Verification_02: undefined;
   PhoneVerif2: undefined;
@@ -56,6 +60,8 @@ export type RootStackParamList = {
   BVNverif: undefined;
   BVNverif3: undefined;
   TransactionsList: undefined
+  CADLimits: undefined
+  NGNLimits: undefined
   wtwTransfer1: undefined
   wtwTransfer2: undefined
   wtwTransfer3: undefined

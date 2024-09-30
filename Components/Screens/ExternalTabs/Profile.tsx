@@ -184,6 +184,7 @@ const Profile = () => {
           />
           <Ionicons name="camera" size={24} color="red" style={styles.camera} />
         </TouchableOpacity>
+        <Text style={{textAlign: "center", paddingBottom: 15}}>Please Click on Camera icon to upload Image</Text>
         <TouchableOpacity onPress={uploadImage} style={styles.uploadButton}>
           <Text style={styles.uploadButtonText}>Upload Image</Text>
         </TouchableOpacity>
@@ -217,7 +218,7 @@ const Profile = () => {
             </>
           )}
         </View>
-        <View style={styles.interacHeaderContainer}>
+        {/* <View style={styles.interacHeaderContainer}>
           <Text style={styles.interacHeaderText}>INTERAC E-TRANSFER</Text>
           <TouchableOpacity onPress={copyToClipboard}>
             <Ionicons name="copy-outline" size={20} color="red" style={styles.copyIcon} />
@@ -225,7 +226,7 @@ const Profile = () => {
         </View>
         <View style={styles.interacContainer}>
           <Text style={styles.interacEmail}>{userData?.bankAccount?.interacEmail || ''}</Text>
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -302,8 +303,8 @@ const styles = StyleSheet.create({
     color: 'grey',
   },
   detailsValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: "semibold",
   },
   interacHeaderContainer: {
     flexDirection: 'row',

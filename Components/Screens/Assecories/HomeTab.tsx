@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Easing, Image, LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Easing, LayoutChangeEvent } from 'react-native';
 import CustomText from '../../CustomFont/CustomText';
 
 interface HomeTabProps {
@@ -44,17 +44,17 @@ const HomeTab: React.FC<HomeTabProps> = ({ selectedCurrency = 'NGN', onCurrencyC
         onPress={toggleButton}
       >
         <View style={[styles.sideContainer, isToggled ? styles.offContainer : styles.onContainer]}>
-          <Image source={isToggled ? require('../../../assets/MappleApp/canada.png') : require('../../../assets/MappleApp/Nigeria.png')} style={styles.icon} />
+          <CustomText style={styles.icon}>{isToggled ? '🇨🇦' : '🇳🇬'}</CustomText>
           <CustomText style={styles.sideText}>{isToggled ? 'Canadian Dollar ' : 'Nigerian Naira'}</CustomText>
         </View>
         <View style={[styles.sideContainer, isToggled ? styles.onContainer : styles.offContainer]}>
-          <Image source={isToggled ? require('../../../assets/MappleApp/canada.png') : require('../../../assets/MappleApp/Nigeria.png')} style={styles.icon} />
+          <CustomText style={styles.icon}>{isToggled ? '🇨🇦' : '🇳🇬'}</CustomText>
           <CustomText style={styles.sideText}>{isToggled ? 'Canadian Dollar ' : 'Nigerian Naira'}</CustomText>
         </View>
       </TouchableOpacity>
       <Animated.View style={[styles.sliderButton, { width: buttonWidth, transform: [{ translateX }] }]}>
         <TouchableOpacity style={styles.button} onPress={toggleButton} activeOpacity={1}>
-          <Image source={isToggled ? require('../../../assets/MappleApp/Nigeria.png') : require('../../../assets/MappleApp/canada.png')} style={styles.icon} />
+          <CustomText style={styles.icon}>{isToggled ? '🇳🇬' : '🇨🇦'}</CustomText>
           <CustomText style={styles.buttonText}>{isToggled ? 'Nigerian Naira' : 'Canadian Dollar '}</CustomText>
         </TouchableOpacity>
       </Animated.View>
@@ -121,8 +121,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   icon: {
-    width: 20,
-    height: 20,
+    fontSize: 20,
     marginRight: 5,
   },
   sideText: {
