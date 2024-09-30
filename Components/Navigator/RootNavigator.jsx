@@ -277,11 +277,17 @@ getTokenFromSecureStore()
             <Stack.Screen name="EmailVerif" component={EmailVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
             <Stack.Screen name="EmailVerif2" component={EmailVerif2} options={{ headerShown: false }} />
             <Stack.Screen name="EmailVerif3" component={EmailVerif3} options={{ headerShown: false }} />
+
+            {/* Phone Verification screens */}
             <Stack.Screen name="PhoneVerif" component={PhoneVerif} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
             <Stack.Screen name="PhoneVerif2" component={PhoneVerif2} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
+
+            {/* BVN Verification screens */}
             <Stack.Screen name="BVNverif" component={BVNverif} options={{ ...tabScreenOptions, headerTitle: "1 of 3" }} />
             <Stack.Screen name="BVNverif2" component={BVNverif2} options={{ ...tabScreenOptions, headerTitle: "3 of 3" }} />
             <Stack.Screen name="BVNverif3" component={BVNverif3} options={{ ...tabScreenOptions, headerTitle: "2 of 3" }} />
+
+            {/* Create Pin screens */}
             <Stack.Screen name="CreatePin" component={CreatePin} options={{ ...tabScreenOptions, headerTitle: "2 of 2" }} />
             <Stack.Screen name="CreatePin3" component={CreatePin3} options={{ headerShown: false }} />
   
@@ -321,15 +327,19 @@ getTokenFromSecureStore()
           <Stack.Screen name="Add" component={Add} options={{headerShown: false}} />
           <Stack.Screen name="Send" component={Send} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Swap" component={Swap} options={{headerShown: false}} />
+          {/* Add funds screens */}
           <Stack.Screen name="Interac_1" component={Interac_1} options={{ ...tabScreenOptions, headerTitle: "Add Funds" }} />
+          {/* Wallet to Interact Email transfer screens */}
           <Stack.Screen name="Interac_2" component={Interac_2} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Interac_3" component={Interac_3} options={{ ...tabScreenOptions, headerTitle: "Transfer Summary" }} />
           <Stack.Screen name="Interac_4" component={Interac_4} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />
           <Stack.Screen name="Interac_5" component={Interac_5} options={{headerShown: false}} />
+          {/* Wallet to Nigerian Bank transfer screens */}
           <Stack.Screen name="Bene_1" component={Bene_1} options={{ ...tabScreenOptions, headerTitle: "Send Funds" }} />
           <Stack.Screen name="Bene_2" component={Bene_2} options={{ ...tabScreenOptions, headerTitle: "Transfer Summary" }} />
           <Stack.Screen name="Bene_3" component={Bene_3} options={{headerShown: false}} />
           <Stack.Screen name="Bene_4" component={Bene_4} options={{ ...tabScreenOptions, headerTitle: "Enter Transaction PIN" }} />
+          {/* Wallet to wallet transfer screens */}
           <Stack.Screen name="wtwTransfer1" component={Transfer1} options={{ ...tabScreenOptions, headerTitle: "1 of 3" }} />
           {/* <Stack.Screen name="wtwTransfer2" component={transfer2} options={{ ...tabScreenOptions, headerTitle: "2 of 4" }} /> */}
           <Stack.Screen name="wtwTransfer3" component={transfer3} options={{ ...tabScreenOptions, headerTitle: "2 of 3" }} />
@@ -338,14 +348,19 @@ getTokenFromSecureStore()
           <Stack.Screen name="New_2" component={New_2} options={{headerShown: false}} />
           <Stack.Screen name="New_3" component={New_3} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />
           <Stack.Screen name="New_4" component={New_4} options={{headerShown: false}} />
+          {/* Exchange screens */}
           <Stack.Screen name="Exchange_2" component={Exchange_2} options={{headerShown: false}} />
           <Stack.Screen name="Exchange_3" component={Exchange_3} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />
           <Stack.Screen name="Exchange_4" component={Exchange_4} options={{ ...tabScreenOptions, headerTitle: "Confirm Transaction" }} />
+          {/* Profile screens */}
           <Stack.Screen name="Profile" component={Profile} options={{ ...tabScreenOptions, headerTitle: "Profile Settings" }}  />
+          {/* Account Verification screens */}
           <Stack.Screen name="AccountVerification" component={AccountVerification} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
           <Stack.Screen name="AccountVerification2" component={AccountVerification2} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
           <Stack.Screen name="AccountVerification3" component={AccountVerification3} options={{ ...tabScreenOptions, headerTitle: "Two Factor Verification" }} />
+          {/* Notification screens */}
           <Stack.Screen name="Notifications" component={Notifications} options={{headerShown: false}} />
+          {/* Rate screens */}
           <Stack.Screen name="RateAlerts" component={RateAlerts} options={{ ...tabScreenOptions, headerTitle: "Our Rates" }} />
           <Stack.Screen name="Transaction" component={Transaction} options={{ ...tabScreenOptions, headerTitle: "Transaction Limit" }} />
           <Stack.Screen name="Change" component={Change} options={{ ...tabScreenOptions, headerTitle: "1 of 2" }} />
