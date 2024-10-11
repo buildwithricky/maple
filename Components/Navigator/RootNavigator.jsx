@@ -95,6 +95,9 @@ import Bene_4 from '../Screens/ExternalTabs/Bene_4';
 import CADLimitsScreen from '../Screens/ExternalTabs/Limits/CADLimits';
 import NGNLimitsScreen from '../Screens/ExternalTabs/Limits/NGNLimits';
 import { LinearGradient } from 'expo-linear-gradient';
+import decodeJwtTime from '../../utils/isTokenValid';
+import isTokenValid from '../../utils/isTokenValid';
+
 
 
 
@@ -209,7 +212,15 @@ const [pinLoggedIn, setPinLoggedIn] = useState(false)
 // fetch returning user token 
 const getTokenFromSecureStore= async ()=>{
   console.log("running")
-const token =  await SecureStore.getItemAsync('token');
+  
+  const token =  await SecureStore.getItemAsync('token');
+  // Validate token is valid 
+if(token && isTokenValid(token) === false){
+  await SecureStore.deleteItemAsync('token');
+setIsUserLoggedIn(false);
+} 
+  
+
   if(token){
     setActiveToken(token)
     setIsUserLoggedIn(true)
